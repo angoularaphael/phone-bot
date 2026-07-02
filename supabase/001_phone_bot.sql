@@ -7,7 +7,7 @@
 
 create table if not exists phone_calls (
   id                  bigserial     primary key,
-  call_sid            text          unique not null,   -- identifiant Twilio de l'appel
+  call_sid            text          unique not null,   -- identifiant session Telnyx
   caller              text,                            -- numéro appelant (From)
   called              text,                            -- numéro appelé (To)
 
@@ -30,7 +30,7 @@ create table if not exists phone_calls (
   callback_requested  boolean       default false,
 
   -- Données techniques
-  duration_sec        integer,                         -- durée de l'appel (fourni par Twilio)
+  duration_sec        integer,                         -- durée de l'appel (webhook hangup)
   recording_url       text,                            -- URL de l'enregistrement vocal si activé
   raw_digits          text,                            -- séquence de touches enregistrées
 
@@ -100,7 +100,7 @@ order by created_at desc;
 -- ─── Commentaires ────────────────────────────────────────────────────────────
 
 comment on table  phone_calls                  is 'Suivi des appels entrants — Bot téléphonique Boxing Center';
-comment on column phone_calls.call_sid         is 'Identifiant unique Twilio (CallSid)';
+comment on column phone_calls.call_sid         is 'Identifiant unique session Telnyx';
 comment on column phone_calls.motif            is 'Catégorie du motif d''appel';
 comment on column phone_calls.status           is 'État de l''appel : in_progress | completed | transferred | callback_requested | abandoned';
 comment on column phone_calls.sms_sent         is 'SMS d''information envoyé à l''appelant';

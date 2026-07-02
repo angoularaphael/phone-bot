@@ -1,8 +1,8 @@
 # Boxing Center — Phone Bot
 
 Bot téléphonique pour la ligne principale de Boxing Center.
-Gère les appels entrants via **Twilio**, répond aux questions fréquentes,
-envoie des SMS/WhatsApp, collecte les coordonnées et transfère vers un conseiller.
+Gère les appels entrants via **Telnyx Call Control**, répond aux questions fréquentes,
+envoie des SMS, collecte les coordonnées et transfère vers un conseiller.
 
 ---
 
@@ -11,14 +11,12 @@ envoie des SMS/WhatsApp, collecte les coordonnées et transfère vers un conseil
 | Feature | Détail |
 |---|---|
 | Accueil vocal | Message de bienvenue + menu à 9 choix |
-| Identification du motif | DTMF (touches) + classification vocale |
-| Réponses automatiques | 8 catégories pré-enregistrées (voix Polly Lea-Neural) |
+| Identification du motif | DTMF (touches) |
+| Réponses automatiques | 8 catégories (TTS Azure fr-FR) |
 | Envoi SMS | Informations + lien URL personnalisé par motif |
-| WhatsApp | Via Twilio Sandbox ou numéro Business |
-| Collecte coordonnées | Prénom (reconnaissance vocale) + téléphone (DTMF) |
-| Demande de rappel | Enregistrée en base avec nom + numéro |
+| Collecte téléphone | DTMF si numéro fixe détecté |
+| Demande de rappel | Enregistrée en base avec numéro appelant |
 | Transfert humain | Renvoi vers un conseiller selon le motif |
-| Répondeur | Enregistrement vocal si conseiller indisponible |
 | Supabase | Historique complet + tableau de bord |
 
 ---
@@ -39,23 +37,15 @@ envoie des SMS/WhatsApp, collecte les coordonnées et transfère vers un conseil
 
 ---
 
-## Arbre de décision
+## Sous-menu (après une réponse vocale)
 
-```
-Appel entrant
-  └─ Accueil + Menu principal (touches 1-9)
-       ├─ 1-7 ou 9 → Réponse vocale automatique
-       │               └─ Sous-menu :
-       │                    ├─ 1 → Envoyer SMS
-       │                    │       └─ Collecte prénom (vocal)
-       │                    │           └─ Envoi SMS + confirmation
-       │                    ├─ 2 → Demande de rappel → Confirmation
-       │                    ├─ 3 → Transfert humain
-       │                    │       ├─ Décroché → conversation
-       │                    │       └─ Non décroché → Répondeur
-       │                    └─ * → Retour menu
-       └─ 8 → Transfert humain direct
-```
+| Touche | Action |
+|:---:|---|
+| 1 | Recevoir les infos par SMS |
+| 2 | WhatsApp (fallback SMS) |
+| 3 | Demander un rappel |
+| 4 | Parler à un conseiller |
+| * | Retour au menu principal |
 
 ---
 
@@ -70,8 +60,8 @@ cp .env.example .env
 
 ### Prérequis
 
-1. **Compte Twilio** avec un numéro de téléphone (voix + SMS)
-2. **ngrok** (en développement) pour exposer le serveur en HTTPS
+1. **Compte Telnyx** avec un numéro Voice (+ SMS pour l'envoi de textos)
+2. **Application Voice API** Telnyx avec webhook vers votre serveur
 3. **Supabase** — exécuter le SQL de migration
 
 ### Migration Supabase
@@ -87,38 +77,28 @@ Exécuter dans l'éditeur SQL de Supabase :
 ## Démarrage
 
 ```bash
-# Démarrer le serveur
 npm start
-# ou
-node index.js
-
-# Vérifier les connexions
 node index.js --verify
-
-# Rapport des appels
 node index.js --report
-
-# Mode développement (logs détaillés)
 node index.js --dev
 ```
 
 ---
 
-## Configuration Twilio
+## Configuration Telnyx
 
-Dans **Twilio Console → Phone Numbers → votre numéro** :
+Dans **Telnyx Portal → Voice → Call Control Applications** :
 
 | Champ | Valeur |
 |---|---|
-| Voice — A call comes in | Webhook — `POST https://VOTRE_URL/voice` |
-| Voice — Status callback URL | `POST https://VOTRE_URL/voice/status` |
+| Webhook URL | `POST http://VOTRE_URL/voice` |
+| Webhook API version | v2 |
 
-En développement avec ngrok :
+Associer votre numéro à l'application Voice.
 
-```bash
-ngrok http 3000
-# Copier l'URL HTTPS générée dans BASE_URL du .env
-```
+Pour les **SMS**, créer un **Messaging Profile** et l'associer au numéro.
+
+> Sur bot-hosting, HTTP est accepté (pas besoin de HTTPS pour les tests).
 
 ---
 
@@ -126,11 +106,9 @@ ngrok http 3000
 
 | Variable | Description |
 |---|---|
-| `BASE_URL` | URL publique du serveur (HTTPS requis par Twilio) |
-| `TWILIO_ACCOUNT_SID` | SID de votre compte Twilio |
-| `TWILIO_AUTH_TOKEN` | Token d'authentification Twilio |
-| `TWILIO_PHONE_NUMBER` | Numéro Twilio au format E.164 (+33...) |
-| `TWILIO_WHATSAPP_NUMBER` | Numéro WhatsApp Twilio Sandbox |
+| `BASE_URL` | URL publique du serveur (ex. `http://prem-eu5.bot-hosting.cloud:20959`) |
+| `TELNYX_API_KEY` | Clé API Telnyx |
+| `TELNYX_PHONE_NUMBER` | Numéro Telnyx au format E.164 (`+18592098919`) |
 | `SUPABASE_URL` | URL du projet Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Clé service Supabase |
 | `TRANSFER_ACCUEIL` | Numéro de renvoi — accueil général |
@@ -139,6 +117,17 @@ ngrok http 3000
 | `LINK_ESSAI` | URL de réservation séance d'essai |
 | `LINK_PLANNING` | URL du planning en ligne |
 | `BOT_DRY_RUN` | `true` = simulation sans SMS ni transfert |
+| `BOT_VOICE` | Voix TTS (défaut : `Azure.fr-FR-DeniseNeural`) |
+
+---
+
+## Déploiement bot-hosting
+
+1. Copier `bootstrap.js` → `/home/container/index.js`
+2. Copier `env.bothosting` → `/home/container/.env` (avec vos clés)
+3. Redémarrer le serveur
+
+Le bootstrap clone le repo GitHub, installe les dépendances et lance le bot.
 
 ---
 
@@ -146,34 +135,21 @@ ngrok http 3000
 
 ```
 phone-bot/
-├── index.js              ← Serveur Express (point d'entrée)
+├── index.js              ← Serveur Express (webhooks Telnyx)
+├── bootstrap.js          ← Script de démarrage bot-hosting
 ├── config/
-│   ├── messages.js       ← Tous les messages vocaux (TTS)
-│   └── routing.js        ← Table de routage motif → numéro + SMS
+│   ├── messages.js       ← Messages vocaux (TTS)
+│   └── routing.js        ← Routage motif → transfert + SMS
 ├── flows/
-│   ├── welcome.js        ← Accueil de l'appel entrant
-│   ├── menu.js           ← Menu principal (rappelable)
-│   ├── dispatch.js       ← Aiguillage par touche
-│   ├── answer.js         ← Réponse vocale + sous-menu
-│   ├── sub.js            ← Traitement du sous-menu
-│   ├── collect.js        ← Collecte prénom + téléphone
-│   ├── callback.js       ← Demande de rappel
-│   ├── human.js          ← Transfert + fallback + répondeur
-│   ├── bye.js            ← Au revoir + raccrochage
-│   └── status.js         ← Webhook statut fin d'appel
+│   └── callcontrol.js    ← Machine à états Call Control v2
 ├── lib/
-│   ├── logger.js         ← log / warn / err
-│   ├── url.js            ← Construction des URLs webhook
-│   ├── twiml.js          ← Générateurs TwiML
-│   ├── classifier.js     ← Classification vocale → motif
-│   ├── sms.js            ← Envoi SMS + WhatsApp
+│   ├── telnyx.js         ← Client API Telnyx
+│   ├── state.js          ← client_state (base64)
+│   ├── sms.js            ← Envoi SMS
 │   ├── tracker.js        ← Persistance Supabase
-│   └── transfer.js       ← Résolution du numéro de transfert
-├── scripts/
-│   ├── verify.js         ← Test des connexions
-│   └── report.js         ← Rapport appels + rappels
+│   └── transfer.js       ← Numéro de transfert
 └── supabase/
-    └── 001_phone_bot.sql ← Schéma de la base de données
+    └── 001_phone_bot.sql ← Schéma base de données
 ```
 
 ---

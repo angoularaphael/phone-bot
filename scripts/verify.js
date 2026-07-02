@@ -1,39 +1,26 @@
 'use strict';
 
 /**
- * Vérifie que toutes les connexions (Twilio, Supabase) sont opérationnelles.
- * Lancé via : node index.js --verify
+ * Vérifie que toutes les connexions (Telnyx, Supabase) sont opérationnelles.
  */
 
 const { log, warn } = require('../lib/logger');
+const telnyx = require('../lib/telnyx');
 
 module.exports = async function verify() {
     const divider = () => log('─'.repeat(58));
 
     divider();
-    log('🔧 Vérification des connexions — Boxing Center Phone Bot\n');
+    log('🔧 Vérification — Boxing Center Phone Bot (Telnyx)\n');
 
-    // ── Twilio ─────────────────────────────────────────────────────
-    const sid   = process.env.TWILIO_ACCOUNT_SID;
-    const token = process.env.TWILIO_AUTH_TOKEN;
-    const phone = process.env.TWILIO_PHONE_NUMBER;
-
-    if (!sid || !token) {
-        warn('Twilio : TWILIO_ACCOUNT_SID ou TWILIO_AUTH_TOKEN manquant');
-    } else if (!phone) {
-        warn('Twilio : TWILIO_PHONE_NUMBER manquant');
+    log('   Test Telnyx...');
+    const tx = await telnyx.verify();
+    if (tx.ok) {
+        log(`✅ Telnyx OK — numéro : ${tx.phone}`);
     } else {
-        try {
-            const twilio = require('twilio')(sid, token);
-            const account = await twilio.api.accounts(sid).fetch();
-            log(`✅ Twilio OK — compte : ${account.friendlyName}`);
-            log(`   Numéro bot : ${phone}`);
-        } catch (e) {
-            warn(`Twilio : ${e.message}`);
-        }
+        warn(`Telnyx : ${tx.error}`);
     }
 
-    // ── Supabase ───────────────────────────────────────────────────
     const url = process.env.SUPABASE_URL;
     const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
@@ -43,42 +30,37 @@ module.exports = async function verify() {
         try {
             const { createClient } = require('@supabase/supabase-js');
             const db = createClient(url, key);
-            const { data, error } = await db.from('phone_calls').select('id').limit(1);
+            const { error } = await db.from('phone_calls').select('id').limit(1);
             if (error) {
                 warn(`Supabase : ${error.message}`);
                 if (/relation.*does not exist/i.test(error.message)) {
-                    warn('→ Exécutez supabase/001_phone_bot.sql pour créer les tables');
+                    warn('→ Exécutez supabase/001_phone_bot.sql');
                 }
             } else {
-                log(`✅ Supabase OK — table phone_calls accessible`);
+                log('✅ Supabase OK — table phone_calls accessible');
             }
         } catch (e) {
             warn(`Supabase : ${e.message}`);
         }
     }
 
-    // ── Configuration générale ─────────────────────────────────────
     const BASE_URL = process.env.BASE_URL;
-    log(`\n🌐 Configuration :`);
-    log(`   BASE_URL        : ${BASE_URL || '⚠️  NON DÉFINI — requis pour les webhooks Twilio'}`);
-    log(`   TRANSFER_ACCUEIL: ${process.env.TRANSFER_ACCUEIL || '(non défini)'}`);
-    log(`   TRANSFER_ADMIN  : ${process.env.TRANSFER_ADMIN   || '(non défini)'}`);
-    log(`   BOT_DRY_RUN     : ${process.env.BOT_DRY_RUN      || 'false'}`);
+    log('\n🌐 Configuration :');
+    log(`   BASE_URL         : ${BASE_URL || '⚠️  NON DÉFINI'}`);
+    log(`   TELNYX_PHONE     : ${process.env.TELNYX_PHONE_NUMBER || '(non défini)'}`);
+    log(`   TRANSFER_ACCUEIL : ${process.env.TRANSFER_ACCUEIL || '(non défini)'}`);
+    log(`   BOT_DRY_RUN      : ${process.env.BOT_DRY_RUN || 'false'}`);
 
-    // ── Routing ────────────────────────────────────────────────────
-    log(`\n📞 Routing des motifs :`);
+    log('\n📞 Routing des motifs :');
     const { routes } = require('../config/routing');
-    for (const [motif, r] of Object.entries(routes())) {
-        const dest = r.transfer || '(pas de transfert)';
-        console.log(`   ${r.digit}  ${r.label.padEnd(30)} → ${dest}`);
+    for (const [, r] of Object.entries(routes())) {
+        console.log(`   ${r.digit}  ${r.label.padEnd(30)} → ${r.transfer || '(pas de transfert)'}`);
     }
 
-    log(`\n🔗 Webhooks Twilio à configurer :`);
     if (BASE_URL) {
-        log(`   Appel entrant (Voice URL) : POST ${BASE_URL}/voice`);
-        log(`   Status callback           : POST ${BASE_URL}/voice/status`);
-    } else {
-        warn('Définissez BASE_URL dans .env pour afficher les URLs de webhook');
+        log('\n🔗 Webhooks Telnyx :');
+        log(`   Voice URL   : POST ${BASE_URL}/voice`);
+        log(`   Status URL  : POST ${BASE_URL}/voice/status`);
     }
 
     divider();
