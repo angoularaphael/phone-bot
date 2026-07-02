@@ -36,7 +36,8 @@ const { menu }                               = require('./flows/menu');
 const { dispatch }                           = require('./flows/dispatch');
 const { answer }                             = require('./flows/answer');
 const { sub }                                = require('./flows/sub');
-const { collectName, collectPhone, collectSave } = require('./flows/collect');
+const { collectName, collectPhone, collectSave }          = require('./flows/collect');
+const { whatsappName, whatsappPhone, whatsappSave }       = require('./flows/whatsapp');
 const { callback }                           = require('./flows/callback');
 const { human, fallback, recorded }          = require('./flows/human');
 const { bye }                                = require('./flows/bye');
@@ -74,6 +75,11 @@ app.post('/voice/sub',           sub);
 app.post('/voice/collect/name',  collectName);
 app.post('/voice/collect/phone', collectPhone);
 app.post('/voice/collect/save',  collectSave);
+
+// Collecte coordonnées pour WhatsApp
+app.post('/voice/whatsapp/name',  whatsappName);
+app.post('/voice/whatsapp/phone', whatsappPhone);
+app.post('/voice/whatsapp/save',  whatsappSave);
 
 // Actions
 app.post('/voice/callback',      callback);

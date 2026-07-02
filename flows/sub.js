@@ -4,9 +4,10 @@
  * Sous-menu après la réponse vocale.
  *
  * Digits reçus :
- *   1  → envoyer un SMS (→ collecte prénom)
- *   2  → demander un rappel
- *   3  → parler à un conseiller (transfert)
+ *   1  → envoyer un SMS
+ *   2  → envoyer sur WhatsApp
+ *   3  → demander un rappel
+ *   4  → parler à un conseiller (transfert)
  *   *  → retour menu principal
  *   timeout / autre → rejouer la réponse
  *
@@ -28,16 +29,18 @@ function sub(req, res) {
             return res.send(buildRedirect(voiceUrl('collect/name', { motif })));
 
         case '2':
-            return res.send(buildRedirect(voiceUrl('callback', { motif })));
+            return res.send(buildRedirect(voiceUrl('whatsapp/name', { motif })));
 
         case '3':
+            return res.send(buildRedirect(voiceUrl('callback', { motif })));
+
+        case '4':
             return res.send(buildRedirect(voiceUrl('human', { motif })));
 
         case '*':
             return res.send(buildRedirect(voiceUrl('menu')));
 
         default: {
-            // Pas de saisie ou touche invalide → rejouer la réponse + sous-menu
             const answerText = ANSWERS[motif] || ANSWERS.autre;
             const fullText   = `${NO_INPUT}${answerText} ${SUB_MENU}`;
             return res.send(buildGather({
