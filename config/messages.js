@@ -39,8 +39,9 @@ const MENU_REPEAT =
 
 const SUB_MENU =
     `Pour recevoir ces informations par S.M.S., appuyez sur 1. ` +
-    `Pour demander un rappel, appuyez sur 2. ` +
-    `Pour parler à un conseiller, appuyez sur 3. ` +
+    `Pour les recevoir sur WhatsApp, appuyez sur 2. ` +
+    `Pour demander un rappel, appuyez sur 3. ` +
+    `Pour parler à un conseiller, appuyez sur 4. ` +
     `Pour revenir au menu principal, appuyez sur étoile.`;
 
 // ─── Réponses par motif ───────────────────────────────────────────────────────
@@ -113,6 +114,18 @@ const SMS_CONFIRM =
     (name) => `Parfait${name ? `, ${name}` : ''} ! ` +
         `Nous vous envoyons les informations par S.M.S. dans quelques instants.`;
 
+const WHATSAPP_CONFIRM =
+    (name) => `Parfait${name ? `, ${name}` : ''} ! ` +
+        `Nous vous envoyons les informations sur WhatsApp dans quelques instants.`;
+
+const COLLECT_NAME_WA =
+    `Pour vous envoyer les informations sur WhatsApp, j'ai besoin de votre prénom. ` +
+    `Dites votre prénom après le signal.`;
+
+const COLLECT_PHONE_WA =
+    `Merci ! Sur quel numéro WhatsApp souhaitez-vous recevoir le message ? ` +
+    `Saisissez votre numéro de téléphone à 10 chiffres sur le clavier.`;
+
 const CALLBACK_CONFIRM =
     `Votre demande de rappel a bien été enregistrée. ` +
     `Un de nos conseillers vous contactera dans les meilleurs délais, ` +
@@ -151,6 +164,9 @@ module.exports = {
     COLLECT_NAME_FALLBACK,
     COLLECT_PHONE,
     SMS_CONFIRM,
+    WHATSAPP_CONFIRM,
+    COLLECT_NAME_WA,
+    COLLECT_PHONE_WA,
     CALLBACK_CONFIRM,
     TRANSFER_WAIT,
     TRANSFER_FAILED,
