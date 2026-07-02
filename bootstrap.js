@@ -97,7 +97,7 @@ if (fs.existsSync(ROOT_ENV_PATH)) {
     // Génère un .env minimal depuis les variables d'environnement du panneau
     const ENV_KEYS = [
         'PORT', 'SERVER_PORT', 'BASE_URL',
-        'TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_PHONE_NUMBER', 'TWILIO_WHATSAPP_NUMBER',
+        'TELNYX_API_KEY', 'TELNYX_PHONE_NUMBER',
         'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY',
         'TRANSFER_ACCUEIL', 'TRANSFER_ADMIN', 'TRANSFER_COMPETITION',
         'BOXING_WEBSITE', 'LINK_HORAIRES', 'LINK_TARIFS', 'LINK_ESSAI',
@@ -120,6 +120,6 @@ run('npm install --omit=dev', APP_DIR);
 
 // ─── 6. Lancer le serveur ─────────────────────────────────────────────────────
 
-console.log('\n🚀 Démarrage Phone Bot (serveur webhooks Twilio)...\n');
+console.log('\n🚀 Démarrage Phone Bot (webhooks Telnyx)...\n');
 process.chdir(APP_DIR);
 require(path.join(APP_DIR, 'index.js'));
