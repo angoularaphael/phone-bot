@@ -53,7 +53,13 @@ app.use(express.json());
 // Logs des requêtes entrantes en mode dev
 if (args.has('--dev') || process.env.DEBUG === 'true') {
     app.use((req, res, next) => {
-        log(`→ ${req.method} ${req.path}  body: ${JSON.stringify(req.body)}`);
+        const ct = req.get('content-type') || '(none)';
+        const keys = Object.keys(req.body || {});
+        const preview = keys.length ? JSON.stringify(req.body) : '{}';
+        log(`→ ${req.method} ${req.path}  ct: ${ct}  body: ${preview}`);
+        if (req.method === 'POST' && keys.length === 0) {
+            warn(`POST ${req.path} sans corps — attendu application/x-www-form-urlencoded (Twilio)`);
+        }
         next();
     });
 }

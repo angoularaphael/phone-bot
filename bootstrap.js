@@ -1,20 +1,5 @@
 'use strict';
 
-/**
- * Boxing Center — Phone Bot Bootstrap
- * ════════════════════════════════════════════════════════════════
- * Ce fichier est déposé en tant que  index.js  à la racine
- * du container bot-hosting (/home/container/index.js).
- *
- * Au démarrage il :
- *   1. Lit le .env racine (/home/container/.env)
- *   2. Clone ou met à jour le repo GitHub
- *   3. Copie le .env dans le dossier de l'app
- *   4. Installe les dépendances
- *   5. Lance le serveur du bot téléphonique
- * ════════════════════════════════════════════════════════════════
- */
-
 const { execSync } = require('child_process');
 const fs   = require('fs');
 const path = require('path');
@@ -98,6 +83,7 @@ if (fs.existsSync(ROOT_ENV_PATH)) {
     const ENV_KEYS = [
         'PORT', 'SERVER_PORT', 'BASE_URL',
         'TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_PHONE_NUMBER', 'TWILIO_WHATSAPP_NUMBER',
+        'WHATSAPP_PROVIDER', 'WHATSAPP_BOT_URL', 'SITE_API_SECRET',
         'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY',
         'TRANSFER_ACCUEIL', 'TRANSFER_ADMIN', 'TRANSFER_COMPETITION',
         'BOXING_WEBSITE', 'LINK_HORAIRES', 'LINK_TARIFS', 'LINK_ESSAI',

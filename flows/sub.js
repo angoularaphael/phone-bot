@@ -16,7 +16,7 @@
 
 const { buildRedirect, buildGather } = require('../lib/twiml');
 const { voiceUrl }                   = require('../lib/url');
-const { ANSWERS, SUB_MENU, NO_INPUT } = require('../config/messages');
+const { getAnswer, SUB_MENU, NO_INPUT } = require('../config/messages');
 
 function sub(req, res) {
     const digit = req.body.Digits;
@@ -41,7 +41,7 @@ function sub(req, res) {
             return res.send(buildRedirect(voiceUrl('menu')));
 
         default: {
-            const answerText = ANSWERS[motif] || ANSWERS.autre;
+            const answerText = getAnswer(motif);
             const fullText   = `${NO_INPUT}${answerText} ${SUB_MENU}`;
             return res.send(buildGather({
                 say:       fullText,

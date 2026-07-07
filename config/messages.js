@@ -18,19 +18,15 @@ const WELCOME =
     `Bonjour et bienvenue chez Boxing Center, ` +
     `votre salle de boxe anglaise et kick-boxing. `;
 
-// ─── Menu principal ──────────────────────────────────────────────────────────
+// ─── Menu principal (5 options) ────────────────────────────────────────────────
 
 const MENU =
-    `Pour vous orienter, veuillez choisir parmi les options suivantes. ` +
-    `Pour les horaires et l'accès à la salle, appuyez sur 1. ` +
-    `Pour les tarifs et nos offres, appuyez sur 2. ` +
-    `Pour réserver une séance d'essai gratuite, appuyez sur 3. ` +
-    `Pour vous inscrire, appuyez sur 4. ` +
-    `Pour consulter le planning des cours, appuyez sur 5. ` +
-    `Pour la compétition, appuyez sur 6. ` +
-    `Pour un problème administratif ou une demande de facture, appuyez sur 7. ` +
-    `Pour parler directement à un conseiller, appuyez sur 8. ` +
-    `Pour toute autre demande, appuyez sur 9.`;
+    `Pour vous orienter, écoutez les options suivantes. ` +
+    `Pour les horaires, l'accès à la salle et le planning des cours, appuyez sur 1. ` +
+    `Pour les tarifs, réserver une séance d'essai gratuite ou vous inscrire, appuyez sur 2. ` +
+    `Pour la compétition, appuyez sur 3. ` +
+    `Pour une question administrative, une résiliation ou une facture, appuyez sur 4. ` +
+    `Pour parler directement à un conseiller, appuyez sur 5.`;
 
 const MENU_REPEAT =
     `Je n'ai pas saisi votre choix. ` + MENU;
@@ -38,62 +34,57 @@ const MENU_REPEAT =
 // ─── Sous-menu après chaque réponse ──────────────────────────────────────────
 
 const SUB_MENU =
-    `Pour recevoir ces informations par S.M.S., appuyez sur 1. ` +
+    `Que souhaitez-vous faire ensuite ? ` +
+    `Pour recevoir ces informations par S.M.S. sur votre mobile, appuyez sur 1. ` +
     `Pour les recevoir sur WhatsApp, appuyez sur 2. ` +
-    `Pour demander un rappel, appuyez sur 3. ` +
-    `Pour parler à un conseiller, appuyez sur 4. ` +
+    `Pour être rappelé par un conseiller, appuyez sur 3. ` +
+    `Pour parler à un conseiller maintenant, appuyez sur 4. ` +
     `Pour revenir au menu principal, appuyez sur étoile.`;
 
 // ─── Réponses par motif ───────────────────────────────────────────────────────
 
 const ANSWERS = {
 
-    horaires:
+    // Fusion horaires + planning (touche 1)
+    infos_pratiques:
         `Nos salles sont ouvertes du lundi au vendredi de 9 heures à 21 heures 30, ` +
         `le samedi de 9 heures à 18 heures, et le dimanche de 9 heures à 13 heures. ` +
-        `En période estivale, des horaires aménagés peuvent s'appliquer. ` +
-        `Retrouvez l'adresse et le plan d'accès sur notre site internet. `,
+        `Nous proposons plus de 30 cours par semaine : boxe anglaise, kick-boxing, savate et fitness combat. ` +
+        `L'adresse et le planning complet sont disponibles sur notre site internet. `,
 
-    tarifs:
-        `Nos abonnements adultes débutent à 45 euros par mois. ` +
-        `Des formules trimestrielles et annuelles sont disponibles avec des tarifs avantageux. ` +
-        `Des réductions sont accordées pour les enfants, les étudiants et les familles. ` +
-        `En ce moment, nous proposons une offre été et une offre rentrée exceptionnelles. `,
-
-    seance_essai:
-        `Bonne nouvelle ! Nous proposons une séance d'essai entièrement gratuite et sans engagement ` +
-        `pour découvrir nos cours de boxe anglaise, kick-boxing et fitness combat. ` +
-        `Tous les niveaux sont acceptés, du grand débutant au sportif confirmé. ` +
-        `Présentez-vous directement à l'accueil ou réservez votre créneau en ligne. `,
-
+    // Fusion tarifs + essai + inscription (touche 2)
     inscription:
-        `Pour vous inscrire chez Boxing Center, rendez-vous à l'accueil de la salle ` +
-        `avec une pièce d'identité et un justificatif de domicile. ` +
-        `L'inscription est possible du lundi au samedi aux horaires d'ouverture. ` +
-        `Je peux vous envoyer le lien d'inscription en ligne par S.M.S. si vous le souhaitez. `,
-
-    planning:
-        `Nous proposons plus de 30 créneaux de cours par semaine, ` +
-        `incluant la boxe anglaise, le kick-boxing, la savate, ` +
-        `le fitness combat et des cours spécifiques enfants et adolescents. ` +
-        `Les cours enfants ont lieu le mercredi après-midi et le samedi matin. ` +
-        `Je vous envoie le planning complet par S.M.S. si vous le souhaitez. `,
+        `Nos abonnements adultes débutent à 45 euros par mois, ` +
+        `avec des tarifs réduits pour les enfants et les étudiants. ` +
+        `La séance d'essai est gratuite et sans engagement, tous niveaux acceptés. ` +
+        `Pour vous inscrire, présentez-vous à l'accueil avec une pièce d'identité, ou inscrivez-vous en ligne. `,
 
     competition:
-        `Boxing Center dispose d'une équipe compétition active. ` +
-        `Nous participons aux galeas régionaux et aux championnats nationaux. ` +
-        `Pour intégrer l'équipe, il faut généralement suivre des cours réguliers pendant au moins 3 mois. ` +
-        `Notre responsable compétition peut vous donner toutes les informations nécessaires. `,
+        `Boxing Center dispose d'une équipe compétition active, ` +
+        `présente aux galeas régionaux et aux championnats nationaux. ` +
+        `L'intégration se fait généralement après 3 mois de cours réguliers. `,
 
     administratif:
         `Pour toute question administrative, résiliation, modification de contrat ou demande de facture, ` +
         `notre équipe est disponible du lundi au vendredi de 9 heures à 17 heures. ` +
-        `Vous pouvez également accéder à vos documents depuis votre espace membre sur notre site internet. `,
+        `Vos documents sont aussi accessibles sur votre espace membre en ligne. `,
 
     autre:
-        `Pour toute demande qui ne figure pas dans notre menu, ` +
-        `nos conseillers sont là pour vous aider. `,
+        `Nos conseillers répondront à votre demande. `,
 };
+
+/** Anciens motifs → nouveaux (rétrocompatibilité) */
+const ANSWER_ALIASES = {
+    horaires:     'infos_pratiques',
+    planning:     'infos_pratiques',
+    tarifs:       'inscription',
+    seance_essai: 'inscription',
+};
+
+function getAnswer(motif) {
+    const key = ANSWER_ALIASES[motif] || motif;
+    return ANSWERS[key] || ANSWERS.autre;
+}
 
 // ─── Collecte des coordonnées ─────────────────────────────────────────────────
 
@@ -160,6 +151,8 @@ module.exports = {
     MENU_REPEAT,
     SUB_MENU,
     ANSWERS,
+    getAnswer,
+    ANSWER_ALIASES,
     COLLECT_NAME,
     COLLECT_NAME_FALLBACK,
     COLLECT_PHONE,

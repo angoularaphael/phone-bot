@@ -9,12 +9,12 @@
 
 const { buildGather }            = require('../lib/twiml');
 const { voiceUrl }               = require('../lib/url');
-const { ANSWERS, SUB_MENU }      = require('../config/messages');
+const { getAnswer, SUB_MENU }      = require('../config/messages');
 
 function answer(req, res) {
     const motif = req.query.motif || 'autre';
 
-    const answerText = ANSWERS[motif] || ANSWERS.autre;
+    const answerText = getAnswer(motif);
     const fullText   = `${answerText} ${SUB_MENU}`;
 
     const twiml = buildGather({
