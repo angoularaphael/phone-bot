@@ -4,15 +4,11 @@
  * Aiguillage principal — reçoit la touche du menu et route vers le bon handler.
  *
  * Digit → Motif
- *   1 → horaires
- *   2 → tarifs
- *   3 → seance_essai
- *   4 → inscription
- *   5 → planning
- *   6 → competition
- *   7 → administratif
- *   8 → humain (transfert direct)
- *   9 → autre
+ *   1 → infos_pratiques  (horaires + planning)
+ *   2 → inscription      (tarifs + essai + inscription)
+ *   3 → competition
+ *   4 → administratif
+ *   5 → humain (transfert direct)
  *   * → retour menu
  */
 

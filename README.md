@@ -10,7 +10,7 @@ envoie des SMS/WhatsApp, collecte les coordonnées et transfère vers un conseil
 
 | Feature | Détail |
 |---|---|
-| Accueil vocal | Message de bienvenue + menu à 9 choix |
+| Accueil vocal | Message de bienvenue + menu à 5 choix |
 | Identification du motif | DTMF (touches) + classification vocale |
 | Réponses automatiques | 8 catégories pré-enregistrées (voix Polly Lea-Neural) |
 | Envoi SMS | Informations + lien URL personnalisé par motif |
@@ -27,15 +27,11 @@ envoie des SMS/WhatsApp, collecte les coordonnées et transfère vers un conseil
 
 | Touche | Motif |
 |:---:|---|
-| 1 | Horaires et accès à la salle |
-| 2 | Tarifs, offre été et offre rentrée |
-| 3 | Séance d'essai gratuite |
-| 4 | Inscription |
-| 5 | Planning des cours (enfants, adultes) |
-| 6 | Compétition |
-| 7 | Problème administratif, résiliation, facture |
-| 8 | Parler directement à un conseiller |
-| 9 | Autre demande |
+| 1 | Horaires et planning |
+| 2 | Tarifs, essai gratuit et inscription |
+| 3 | Compétition |
+| 4 | Administratif / facture |
+| 5 | Parler à un conseiller |
 
 ---
 
@@ -43,18 +39,15 @@ envoie des SMS/WhatsApp, collecte les coordonnées et transfère vers un conseil
 
 ```
 Appel entrant
-  └─ Accueil + Menu principal (touches 1-9)
-       ├─ 1-7 ou 9 → Réponse vocale automatique
+  └─ Accueil + Menu principal (touches 1-5)
+       ├─ 1-4 → Réponse vocale automatique
        │               └─ Sous-menu :
        │                    ├─ 1 → Envoyer SMS
-       │                    │       └─ Collecte prénom (vocal)
-       │                    │           └─ Envoi SMS + confirmation
-       │                    ├─ 2 → Demande de rappel → Confirmation
-       │                    ├─ 3 → Transfert humain
-       │                    │       ├─ Décroché → conversation
-       │                    │       └─ Non décroché → Répondeur
+       │                    ├─ 2 → WhatsApp
+       │                    ├─ 3 → Demande de rappel
+       │                    ├─ 4 → Transfert humain
        │                    └─ * → Retour menu
-       └─ 8 → Transfert humain direct
+       └─ 5 → Transfert humain direct
 ```
 
 ---

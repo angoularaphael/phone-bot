@@ -18,7 +18,7 @@ const { buildSpeechGather, buildGather, buildRedirect } = require('../lib/twiml'
 const { voiceUrl }          = require('../lib/url');
 const { sendWhatsApp, buildSmsBody } = require('../lib/sms');
 const { updateCall }        = require('../lib/tracker');
-const { routes }            = require('../config/routing');
+const { getRoute }          = require('../config/routing');
 const { log, warn }         = require('../lib/logger');
 const {
     COLLECT_NAME_WA,
@@ -74,9 +74,8 @@ async function whatsappSave(req, res) {
     const rawPhone = (req.body.Digits || req.query.phone || caller || '').replace(/\s/g, '');
     const toPhone  = normalizePhone(rawPhone);
 
-    const allRoutes = routes();
-    const route     = allRoutes[motif] || {};
-    const link      = route.smsLink || '';
+    const route = getRoute(motif);
+    const link  = route.smsLink || '';
 
     const body = buildSmsBody(motif, name || null, link);
 
