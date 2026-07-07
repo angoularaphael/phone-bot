@@ -64,6 +64,12 @@ if (args.has('--dev') || process.env.DEBUG === 'true') {
     });
 }
 
+// ─── Fichiers audio (bip du signal sonore) ────────────────────────────────────
+
+app.get('/audio/beep.wav', (req, res) => {
+    res.sendFile(require('path').join(__dirname, 'assets', 'beep.wav'));
+});
+
 // ─── Routes vocales (webhooks Twilio) ─────────────────────────────────────────
 
 // Appel entrant — URL à configurer dans Twilio Console
