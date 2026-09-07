@@ -2,7 +2,7 @@
 
 /**
  * Ancien transfert humain : plus aucun Dial.
- * On ramène l'appelant dans la conversation.
+ * On ramène l'appelant au menu David.
  */
 
 const { buildVoiceGather, buildSay } = require('../lib/twiml');
@@ -13,29 +13,29 @@ const { HUMAN_STEER, CALLBACK_CONFIRM, GOODBYE } = require('../config/messages')
 
 async function human(req, res) {
     const callSid = req.body.CallSid;
-    log(`🗣️  Demande conseiller — CallSid: ${callSid} — redirection conversation (pas de transfert)`);
+    log(`🗣️  Demande conseiller — CallSid: ${callSid} — redirection menu (pas de transfert)`);
     if (callSid) {
-        await updateCall(callSid, { notes: 'human_steered_to_converse', status: 'in_progress' });
+        await updateCall(callSid, { notes: 'human_steered_to_menu', status: 'in_progress' });
     }
     res.type('text/xml');
     res.send(buildVoiceGather({
         say:     HUMAN_STEER,
-        action:  voiceUrl('converse'),
-        timeout: 8,
+        action:  voiceUrl('dispatch'),
+        timeout: 10,
     }));
 }
 
 async function fallback(req, res) {
     const callSid = req.body.CallSid;
-    log(`🗣️  Fallback — CallSid: ${callSid} — conversation, pas de Dial`);
+    log(`🗣️  Fallback — CallSid: ${callSid} — menu, pas de Dial`);
     if (callSid) {
         await updateCall(callSid, { notes: 'no_transfer', status: 'in_progress' });
     }
     res.type('text/xml');
     res.send(buildVoiceGather({
         say:     HUMAN_STEER,
-        action:  voiceUrl('converse'),
-        timeout: 8,
+        action:  voiceUrl('dispatch'),
+        timeout: 10,
     }));
 }
 

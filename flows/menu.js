@@ -1,19 +1,19 @@
 'use strict';
 
 /**
- * Reprise d'écoute — même accueil conversationnel.
+ * Menu principal — 4 touches.
  */
 
 const { buildVoiceGather } = require('../lib/twiml');
 const { voiceUrl }         = require('../lib/url');
-const { WELCOME, ASK_REPEAT } = require('../config/messages');
+const { WELCOME, MENU_REPEAT } = require('../config/messages');
 
 function menu(req, res) {
     const repeated = req.query.repeat === '1';
     const twiml = buildVoiceGather({
-        say:     repeated ? ASK_REPEAT : WELCOME,
-        action:  voiceUrl('converse'),
-        timeout: 8,
+        say:     repeated ? MENU_REPEAT : WELCOME,
+        action:  voiceUrl('dispatch'),
+        timeout: 10,
     });
     res.type('text/xml');
     res.send(twiml);

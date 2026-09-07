@@ -1,9 +1,9 @@
 # Boxing Center — Phone Bot
 
 Bot téléphonique de la ligne principale Boxing Center (09 39 03 67 48).
-Gère les appels via **Twilio** : conversation vocale (Polly Lea + Groq), SMS / WhatsApp, demande de rappel.
+Gère les appels via **Twilio** : **David** (voix homme Polly Mathieu), menu à touches, SMS / WhatsApp, demande de rappel.
 
-**Aucun transfert vers un humain.** Le bot répond lui-même (planning, tarifs, essai, résiliation, salles).
+**Aucun transfert vers un humain.** Le bot lit des réponses courtes (horaires, tarifs, planning par salle, résiliation).
 
 ---
 
@@ -11,11 +11,13 @@ Gère les appels via **Twilio** : conversation vocale (Polly Lea + Groq), SMS / 
 
 | Feature | Détail |
 |---|---|
-| Accueil vocal | Invitation à poser une question (parole) |
-| Conversation | STT Twilio + Groq (faits de `config/kb.js`) + TTS Polly |
-| Touches de secours | 1 horaires · 2 tarifs · 3 planning · 4 administratif |
-| Envoi SMS / WhatsApp | Liens boutique, Gérer mon abo, essai |
-| Demande de rappel | Enregistrée en base (pas un transfert live) |
+| Accueil | David + menu 4 touches |
+| Touche 1 | Horaires d'ouverture |
+| Touche 2 | Tarifs (29 € / 4 semaines) et essai |
+| Touche 3 | Planning → sous-menu 5 salles |
+| Touche 4 | Résiliation / facture |
+| Après une réponse | 1 SMS · 2 WhatsApp · 3 rappel · * menu |
+| Parole | Secours uniquement (`/voice/converse` + Groq) |
 | Supabase | Historique d'appels |
 
 ---
@@ -24,21 +26,24 @@ Gère les appels via **Twilio** : conversation vocale (Polly Lea + Groq), SMS / 
 
 ```
 Appel entrant
-  └─ Accueil : « Posez votre question »
-       ├─ Parole → réponse IA (base Boxing Center) → autre question ?
-       ├─ Touche 1-4 → même cerveau, question synthétique
-       └─ Après une réponse :
-            1 SMS · 2 WhatsApp · 3 rappel · parole = suite
+  └─ « Boxing Center, bonjour, c'est David. » + menu 1–4
+       ├─ 1 Horaires → réponse courte
+       ├─ 2 Tarifs / essai → réponse courte
+       ├─ 3 Planning → 1 Minimes · 2 Portet · 3 Ramonville · 4 Saint-Cyprien · 5 États-Unis
+       ├─ 4 Résiliation / facture → réponse courte
+       └─ Parole (secours) → converse
+            └─ Après une réponse :
+                 1 SMS · 2 WhatsApp · 3 rappel · * retour au menu
 ```
 
-Pas de touche « conseiller ». Si l'appelant demande à parler à quelqu'un, le bot traite la demande.
+Pas de touche « conseiller ». Pas de `Dial`.
 
 Faits de référence (alignés sur la boutique, 24/08/2026) :
 
 - Ouverture : lundi–samedi 10h–21h30. Dimanche fermé.
 - Offre : 29 € toutes les 4 semaines (28 jours, jamais « par mois ») · 259 € / 12 mois.
 - Essai : 10 € (après les offres d'abonnement).
-- Résiliation sans engagement : uniquement en ligne (Gérer mon abonnement).
+- Résiliation sans engagement : uniquement en ligne (Gérer mon abonnement), plus de 72 h avant le prélèvement.
 
 ---
 
@@ -53,7 +58,7 @@ cp .env.example .env
 ### Prérequis
 
 1. Compte Twilio (voix + SMS)
-2. Clé Groq (`GROQ_API_KEY`, préfixe `gsk_`) — relais Gemini / Mistral possibles
+2. Clé Groq (`GROQ_API_KEY`, préfixe `gsk_`) — relais Gemini / Mistral possibles (secours parole)
 3. HTTPS public (`BASE_URL`) pour les webhooks
 4. Supabase — migration `supabase/001_phone_bot.sql`
 
@@ -85,11 +90,12 @@ node index.js --dev
 |---|---|
 | `BASE_URL` | URL publique HTTPS |
 | `TWILIO_*` | Compte et numéro Twilio |
-| `GROQ_API_KEY` | Clé Groq (conversation) |
+| `GROQ_API_KEY` | Clé Groq (secours parole) |
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Historique appels |
 | `LINK_GERER_ABO` | Lien SMS résiliation |
+| `BOT_VOICE` | Défaut `Polly.Mathieu` (homme, français) |
 | `BOT_DRY_RUN` | `true` = pas de SMS réel |
-| `USE_AI_REPLY` | `false` = textes figés uniquement |
+| `USE_AI_REPLY` | `false` = pas de LLM même en secours parole |
 
 `TRANSFER_ACCUEIL` / `_ADMIN` / `_COMPETITION` peuvent rester dans le `.env` : elles **ne sont plus lues**.
 
@@ -101,19 +107,21 @@ node index.js --dev
 phone-bot/
 ├── index.js
 ├── config/
-│   ├── kb.js             ← faits (copie de bc-knowledge.js)
-│   ├── voice-prompt.js   ← règles téléphone (jamais transférer)
-│   ├── messages.js       ← TTS accueil / secours
-│   └── routing.js
+│   ├── kb.js             ← faits + SPOKEN_PLANNING par salle
+│   ├── voice-prompt.js   ← identité David (secours LLM)
+│   ├── messages.js       ← accueil, menu, réponses courtes
+│   └── routing.js        ← touches 1–4
 ├── flows/
-│   ├── welcome.js
-│   ├── converse.js       ← boucle vocale
-│   ├── human.js          ← redirige vers converse (plus de Dial)
+│   ├── welcome.js        ← menu DTMF
+│   ├── dispatch.js       ← 1–4 ; 3 → salles
+│   ├── salle.js          ← sous-menu 5 salles
+│   ├── answer.js         ← texte figé + sous-menu
+│   ├── sub.js            ← SMS / WhatsApp / rappel / *
+│   ├── converse.js       ← secours si l'appelant parle
 │   └── …
 ├── lib/
+│   ├── twiml.js          ← Polly.Mathieu + pauses SSML
 │   ├── llm.js
-│   ├── session.js
-│   ├── classifier.js     ← secours si Groq down
 │   └── transfer.js       ← toujours null
 ```
 

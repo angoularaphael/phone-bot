@@ -114,8 +114,8 @@ async function collectSave(req, res) {
     res.type('text/xml');
     res.send(buildVoiceGather({
         say:     confirmText,
-        action:  voiceUrl('converse', { phase: 'after' }),
-        timeout: 8,
+        action:  voiceUrl('sub', { motif }),
+        timeout: 10,
     }));
 }
 

@@ -1,10 +1,7 @@
 'use strict';
 
 /**
- * Table de routage des motifs d'appel.
- * Plus aucun transfert humain : les numéros TRANSFER_* ne sont pas lus.
- *
- * Touches de secours (si la parole n'est pas comprise) :
+ * Menu David — 4 touches, pas de transfert.
  *   1 horaires  2 tarifs/essai  3 planning  4 administratif
  */
 
@@ -14,7 +11,7 @@ function routes() {
     return {
         infos_pratiques: {
             digit:    '1',
-            label:    'Horaires et planning',
+            label:    'Horaires d\'ouverture',
             transfer: null,
             smsLink:  process.env.LINK_HORAIRES || site,
             priority: 'normal',
@@ -35,7 +32,7 @@ function routes() {
         },
         administratif: {
             digit:    '4',
-            label:    'Administratif / Facture',
+            label:    'Résiliation / Facture',
             transfer: null,
             smsLink:  process.env.LINK_GERER_ABO || `${boutique.replace(/\/$/, '')}/gerer-abonnement`,
             priority: 'urgent',

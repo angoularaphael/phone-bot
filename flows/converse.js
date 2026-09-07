@@ -1,10 +1,8 @@
 'use strict';
 
 /**
- * Boucle conversationnelle — parole + touches, jamais de transfert.
- *
- *   /voice/converse            ← question (speech ou DTMF 1-4)
- *   /voice/converse?phase=after ← après une réponse (nouvelle question, SMS, WA, rappel)
+ * Secours si l'appelant parle au lieu d'appuyer.
+ * Le chemin principal est le menu DTMF (welcome → dispatch).
  */
 
 const { buildVoiceGather, buildRedirect, buildHangup } = require('../lib/twiml');
@@ -19,10 +17,8 @@ const { planningReply, GYMS } = require('../config/kb');
 const session = require('../lib/session');
 const {
     ASK_REPEAT,
-    ASK_DTMF_HINT,
     FOLLOW_UP,
     FOLLOW_UP_REPEAT,
-    HUMAN_STEER,
     GOODBYE,
 } = require('../config/messages');
 
@@ -165,7 +161,10 @@ async function converse(req, res) {
         if (digit === '3') {
             return res.send(buildRedirect(voiceUrl('callback', { motif: lastMotif(callSid) })));
         }
-        if (digit === '*' || GOODBYE_RE.test(speech)) {
+        if (digit === '*') {
+            return res.send(buildRedirect(voiceUrl('menu')));
+        }
+        if (GOODBYE_RE.test(speech)) {
             return res.send(buildRedirect(voiceUrl('bye')));
         }
         if (!digit && !speech) {
@@ -174,12 +173,17 @@ async function converse(req, res) {
             return res.send(gatherAfter(FOLLOW_UP_REPEAT));
         }
         if (digit === '4' || digit === '5') {
-            return res.send(gatherAsk(HUMAN_STEER));
+            return res.send(buildRedirect(voiceUrl('menu')));
         }
     }
 
     if (digit === '*') {
-        return res.send(buildRedirect(voiceUrl('bye')));
+        return res.send(buildRedirect(voiceUrl('menu')));
+    }
+
+    if (digit && DTMF_ASK[digit] && digit !== '5') {
+        const { dispatch } = require('./dispatch');
+        return dispatch(req, res);
     }
 
     let question = speech;
@@ -187,7 +191,7 @@ async function converse(req, res) {
 
     if (!question) {
         const sess = session.addMiss(callSid);
-        if (sess.misses >= 2) return res.send(gatherAsk(ASK_DTMF_HINT));
+        if (sess.misses >= 2) return res.send(buildRedirect(voiceUrl('menu')));
         return res.send(gatherAsk(ASK_REPEAT));
     }
 

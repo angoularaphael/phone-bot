@@ -1,74 +1,85 @@
 'use strict';
 
 /**
- * Messages vocaux du bot téléphonique — Boxing Center
- * Langue : français | Voix : Polly.Lea-Neural
+ * Messages vocaux — David, Boxing Center
+ * Voix : Polly.Mathieu (homme)
  *
- * Convention TTS :
- *   - Virgules et points pour les pauses
- *   - Pas d'abréviations (« euros », « S.M.S. »)
- *   - Jamais « par mois » pour l'offre 29 euros (prélèvement toutes les 4 semaines)
+ * Phrases courtes. Points pour les pauses TTS.
+ * 29 euros toutes les 4 semaines : jamais « par mois ».
  */
 
 const WELCOME =
-    `Boxing Center, bonjour, c'est Carmen. ` +
-    `Dites-moi ce que vous cherchez. Un planning, un tarif, un essai…`;
+    `Boxing Center, bonjour, c'est David. ` +
+    `Pour les horaires d'ouverture, appuyez sur 1. ` +
+    `Pour les tarifs et l'essai, appuyez sur 2. ` +
+    `Pour le planning des cours, appuyez sur 3. ` +
+    `Pour une résiliation ou une facture, appuyez sur 4.`;
 
 const MENU = WELCOME;
 
 const MENU_REPEAT =
-    `Pardon, je n'ai pas saisi. ` + WELCOME;
+    `Je n'ai pas saisi votre choix. ` + WELCOME;
+
+const SALLE_MENU =
+    `Quelle salle ? ` +
+    `Appuyez sur 1 pour Minimes. ` +
+    `2 pour Portet. ` +
+    `3 pour Ramonville. ` +
+    `4 pour Saint-Cyprien. ` +
+    `5 pour États-Unis.`;
+
+const SALLE_MENU_REPEAT =
+    `Je n'ai pas saisi. ` + SALLE_MENU;
 
 const ASK_REPEAT =
-    `Je n'ai pas bien entendu. Vous pouvez répéter, simplement.`;
+    `Je n'ai pas bien entendu. Appuyez sur une touche du menu.`;
 
-const ASK_DTMF_HINT =
-    `Dites-moi votre question. Ou appuyez sur 1 pour les horaires, 2 pour les tarifs, 3 pour un planning, 4 pour une résiliation.`;
+const ASK_DTMF_HINT = MENU_REPEAT;
 
-const FOLLOW_UP =
-    `Je peux vous aider sur autre chose ?`;
+const SUB_MENU =
+    `Pour un S.M.S., appuyez sur 1. ` +
+    `WhatsApp, 2. ` +
+    `Un rappel, 3. ` +
+    `Retour au menu, étoile.`;
 
-const FOLLOW_UP_REPEAT =
-    `Vous êtes toujours là ? Dites-moi si vous avez une autre question.`;
+const FOLLOW_UP = SUB_MENU;
+
+const FOLLOW_UP_REPEAT = SUB_MENU;
 
 const HUMAN_STEER =
-    `Je peux vous le dire tout de suite. C'est pour un planning, un tarif, ou autre chose ?`;
-
-const SUB_MENU = FOLLOW_UP;
+    `Je peux vous répondre. ` + WELCOME;
 
 const ANSWERS = {
     infos_pratiques:
-        `Les salles sont ouvertes du lundi au samedi, de 10 heures à 21 heures 30. Dimanche, c'est fermé. ` +
-        `Pour le planning des cours, dites-moi quelle salle. Minimes, Portet, Ramonville, Saint-Cyprien, ou États-Unis.`,
+        `Ouvert du lundi au samedi, de 10 heures à 21 heures 30. ` +
+        `Fermé le dimanche. ` +
+        `Cinq salles à Toulouse et Portet.`,
 
     inscription:
-        `L'offre en cours est à 29 euros toutes les 4 semaines, sans engagement, ` +
-        `soit tous les 28 jours, ce n'est pas un prélèvement mensuel. ` +
-        `Pour l'année, 259 euros les 12 mois, c'est le plus avantageux si vous pratiquez sur la saison. ` +
-        `L'inscription se fait en ligne sur la boutique. ` +
-        `La séance d'essai est à 10 euros si vous préférez tester avant.`,
+        `Offre en cours : 29 euros toutes les 4 semaines, sans engagement. ` +
+        `Ce n'est pas un prélèvement mensuel. C'est tous les 28 jours. ` +
+        `L'année complète : 259 euros. ` +
+        `Essai : 10 euros, réservable en ligne.`,
+
+    planning:
+        `Pour le planning, choisissez d'abord la salle.`,
 
     competition:
-        `Boxing Center a un pôle compétition. ` +
-        `Les cours indiqués compétiteurs sont réservés aux pratiquants confirmés, ` +
-        `ce n'est pas une découverte. ` +
-        `Pour commencer, un cours loisirs tous niveaux convient mieux. ` +
-        `Dans quelle salle souhaitez-vous vous entraîner ?`,
+        `Les cours compétiteurs sont réservés aux confirmés. ` +
+        `Pour découvrir, prenez un cours loisirs, tous niveaux.`,
 
     administratif:
-        `Pour résilier un abonnement sans engagement, c'est uniquement en ligne : ` +
-        `Gérer mon abonnement, puis Résilier mon abonnement. ` +
-        `Une demande orale ne suffit pas. ` +
-        `Enregistrez la demande plus de 72 heures avant le prochain prélèvement. ` +
+        `Pour un sans engagement, c'est uniquement en ligne. ` +
+        `Gérer mon abonnement, puis Résilier. ` +
+        `Plus de 72 heures avant le prélèvement. ` +
         `Je peux vous envoyer le lien par S.M.S.`,
 
     autre:
-        `Dites-moi ce dont vous avez besoin. Un planning, un tarif, un essai, une résiliation…`,
+        `Appuyez sur 1 pour les horaires, 2 pour les tarifs, 3 pour un planning, 4 pour une résiliation.`,
 };
 
 const ANSWER_ALIASES = {
     horaires:     'infos_pratiques',
-    planning:     'infos_pratiques',
     tarifs:       'inscription',
     seance_essai: 'inscription',
 };
@@ -79,54 +90,48 @@ function getAnswer(motif) {
 }
 
 const COLLECT_NAME =
-    `Pour vous envoyer les informations par S.M.S., j'ai besoin de votre prénom. ` +
-    `Dites votre prénom après le signal.`;
+    `Pour le S.M.S., dites votre prénom après le signal.`;
 
 const COLLECT_NAME_FALLBACK =
-    `Je n'ai pas bien entendu. Dites votre prénom clairement après le signal.`;
+    `Je n'ai pas bien entendu. Dites votre prénom après le signal.`;
 
 const COLLECT_PHONE =
-    `Merci ! Sur quel numéro souhaitez-vous recevoir le S.M.S. ? ` +
-    `Saisissez votre numéro de téléphone à 10 chiffres sur le clavier.`;
+    `Sur quel numéro ? Tapez vos 10 chiffres.`;
 
 const SMS_CONFIRM =
-    (name) => `Parfait${name ? `, ${name}` : ''} ! ` +
-        `Nous vous envoyons les informations par S.M.S. dans quelques instants.`;
+    (name) => `C'est envoyé${name ? `, ${name}` : ''}.`;
 
 const WHATSAPP_CONFIRM =
-    (name) => `Parfait${name ? `, ${name}` : ''} ! ` +
-        `Nous vous envoyons les informations sur WhatsApp dans quelques instants.`;
+    (name) => `C'est parti sur WhatsApp${name ? `, ${name}` : ''}.`;
 
 const COLLECT_NAME_WA =
-    `Pour vous envoyer les informations sur WhatsApp, j'ai besoin de votre prénom. ` +
-    `Dites votre prénom après le signal.`;
+    `Pour WhatsApp, dites votre prénom après le signal.`;
 
 const COLLECT_PHONE_WA =
-    `Merci ! Sur quel numéro WhatsApp souhaitez-vous recevoir le message ? ` +
-    `Saisissez votre numéro de téléphone à 10 chiffres sur le clavier.`;
+    `Quel numéro WhatsApp ? Tapez vos 10 chiffres.`;
 
 const CALLBACK_CONFIRM =
-    `Votre demande de rappel a bien été enregistrée. ` +
-    `Nous vous recontacterons dans les meilleurs délais, ` +
-    `du lundi au samedi.`;
+    `C'est noté. On vous rappelle du lundi au samedi.`;
 
 const TRANSFER_WAIT = HUMAN_STEER;
 
 const TRANSFER_FAILED =
-    `Je reste avec vous au téléphone. Posez votre question, je peux y répondre.`;
+    `Je reste avec vous. Appuyez sur une touche du menu.`;
 
 const GOODBYE =
-    `Merci d'avoir appelé. À très bientôt chez Boxing Center. Belle journée.`;
+    `Merci d'avoir appelé Boxing Center. À bientôt.`;
 
-const OUTRO = FOLLOW_UP;
+const OUTRO = SUB_MENU;
 
 const NO_INPUT =
-    `Je n'ai pas reçu de réponse. `;
+    `Je n'ai pas reçu de touche. `;
 
 module.exports = {
     WELCOME,
     MENU,
     MENU_REPEAT,
+    SALLE_MENU,
+    SALLE_MENU_REPEAT,
     ASK_REPEAT,
     ASK_DTMF_HINT,
     FOLLOW_UP,

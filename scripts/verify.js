@@ -71,7 +71,7 @@ module.exports = async function verify() {
     log(`\n📞 Routing des motifs :`);
     const { routes } = require('../config/routing');
     for (const [motif, r] of Object.entries(routes())) {
-        const dest = r.transfer ? r.transfer : 'conversation (pas de transfert)';
+        const dest = r.transfer ? r.transfer : 'réponse vocale (pas de transfert)';
         console.log(`   ${r.digit}  ${r.label.padEnd(30)} → ${dest}`);
     }
 

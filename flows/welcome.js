@@ -1,8 +1,7 @@
 'use strict';
 
 /**
- * Accueil de l'appel entrant.
- * Conversation vocale — pas de menu « parler à un conseiller ».
+ * Accueil David — menu 4 touches.
  */
 
 const { buildVoiceGather } = require('../lib/twiml');
@@ -22,8 +21,8 @@ async function welcome(req, res) {
 
     const twiml = buildVoiceGather({
         say:     WELCOME,
-        action:  voiceUrl('converse'),
-        timeout: 8,
+        action:  voiceUrl('dispatch'),
+        timeout: 10,
     });
 
     res.type('text/xml');

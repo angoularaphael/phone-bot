@@ -27,8 +27,8 @@ async function callback(req, res) {
 
     const twiml = buildVoiceGather({
         say:     CALLBACK_CONFIRM + ' ' + FOLLOW_UP,
-        action:  voiceUrl('converse', { phase: 'after' }),
-        timeout: 8,
+        action:  voiceUrl('sub', { motif }),
+        timeout: 10,
     });
 
     res.type('text/xml');
