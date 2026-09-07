@@ -47,8 +47,7 @@ const ASK_DTMF_HINT = MENU_REPEAT;
 
 const SUB_MENU =
     `Pour un S.M.S., appuyez sur 1. ` +
-    `WhatsApp, 2. ` +
-    `Un rappel, 3. ` +
+    `Un rappel, 2. ` +
     `Retour au menu, étoile.`;
 
 const FOLLOW_UP = SUB_MENU;
@@ -91,7 +90,7 @@ const ANSWERS = {
 
     autre:
         `Dites votre question. ` +
-        `Sinon je peux envoyer un lien, ou on vous rappelle.`,
+        `Sinon je peux envoyer un S.M.S., ou on vous rappelle.`,
 };
 
 const ANSWER_ALIASES = {
@@ -117,15 +116,6 @@ const COLLECT_PHONE =
 
 const SMS_CONFIRM =
     (name) => `C'est envoyé${name ? `, ${name}` : ''}.`;
-
-const WHATSAPP_CONFIRM =
-    (name) => `C'est parti sur WhatsApp${name ? `, ${name}` : ''}.`;
-
-const COLLECT_NAME_WA =
-    `Pour WhatsApp, dites votre prénom après le signal.`;
-
-const COLLECT_PHONE_WA =
-    `Quel numéro WhatsApp ? Tapez vos 10 chiffres.`;
 
 const CALLBACK_CONFIRM =
     `C'est noté. On vous rappelle du lundi au samedi.`;
@@ -164,9 +154,6 @@ module.exports = {
     COLLECT_NAME_FALLBACK,
     COLLECT_PHONE,
     SMS_CONFIRM,
-    WHATSAPP_CONFIRM,
-    COLLECT_NAME_WA,
-    COLLECT_PHONE_WA,
     CALLBACK_CONFIRM,
     TRANSFER_WAIT,
     TRANSFER_FAILED,

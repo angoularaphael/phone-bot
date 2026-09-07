@@ -91,8 +91,7 @@ const children = [
     quote(M.FOLLOW_UP),
     table(['Touche', 'Action'], [
         ['1', 'SMS avec les liens'],
-        ['2', 'WhatsApp'],
-        ['3', 'Demande de rappel (pas un transfert live)'],
+        ['2', 'Demande de rappel (pas un transfert live)'],
         ['Parole', 'Nouvelle question'],
         ['Au revoir', 'Fin d\'appel'],
     ]),

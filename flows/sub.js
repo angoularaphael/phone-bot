@@ -1,8 +1,8 @@
 'use strict';
 
 /**
- * Après une réponse : 1 SMS · 2 WhatsApp · 3 rappel · * menu.
- * Aucune touche conseiller.
+ * Après une réponse : 1 SMS · 2 rappel · * menu.
+ * Aucune touche conseiller. Pas de WhatsApp.
  */
 
 const { buildRedirect, buildGather } = require('../lib/twiml');
@@ -26,7 +26,6 @@ function sub(req, res) {
         case '1':
             return res.send(buildRedirect(voiceUrl('collect/name', { motif })));
         case '2':
-            return res.send(buildRedirect(voiceUrl('whatsapp/name', { motif })));
         case '3':
             return res.send(buildRedirect(voiceUrl('callback', { motif })));
         case '*':

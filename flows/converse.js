@@ -30,8 +30,7 @@ const DTMF_ASK = {
 };
 
 const GOODBYE_RE = /\b(au revoir|c'?est tout|rien d'autre|non merci|terminer|raccroch|stop)\b/i;
-const SMS_RE = /\b(s\.?m\.?s|texto|par message)\b/i;
-const WA_RE = /whats\s?app/i;
+const SMS_RE = /\b(s\.?m\.?s|texto|par message|whats\s?app)\b/i;
 const CALLBACK_RE = /\b(rappel|rappelez|rappeler|qu'on me rappelle)\b/i;
 const HUMAN_RE = /\b(conseiller|humain|quelqu'un|op[eé]rateur|un manager|parler [aà] quelqu)\b/i;
 
@@ -154,10 +153,7 @@ async function converse(req, res) {
         if (digit === '1') {
             return res.send(buildRedirect(voiceUrl('collect/name', { motif: lastMotif(callSid) })));
         }
-        if (digit === '2') {
-            return res.send(buildRedirect(voiceUrl('whatsapp/name', { motif: lastMotif(callSid) })));
-        }
-        if (digit === '3') {
+        if (digit === '2' || digit === '3') {
             return res.send(buildRedirect(voiceUrl('callback', { motif: lastMotif(callSid) })));
         }
         if (digit === '*') {
@@ -201,9 +197,6 @@ async function converse(req, res) {
     }
     if (SMS_RE.test(question) && question.length < 50) {
         return res.send(buildRedirect(voiceUrl('collect/name', { motif: lastMotif(callSid) })));
-    }
-    if (WA_RE.test(question) && question.length < 50) {
-        return res.send(buildRedirect(voiceUrl('whatsapp/name', { motif: lastMotif(callSid) })));
     }
     if (CALLBACK_RE.test(question) && question.length < 50) {
         return res.send(buildRedirect(voiceUrl('callback', { motif: lastMotif(callSid) })));

@@ -82,9 +82,7 @@ if (fs.existsSync(ROOT_ENV_PATH)) {
     // Génère un .env minimal depuis les variables d'environnement du panneau
     const ENV_KEYS = [
         'PORT', 'SERVER_PORT', 'BASE_URL',
-        'TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_PHONE_NUMBER', 'TWILIO_WHATSAPP_NUMBER',
-        'TWILIO_WHATSAPP_CONTENT_SID',
-        'WHATSAPP_PROVIDER', 'WHATSAPP_BOT_URL', 'SITE_API_SECRET',
+        'TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_PHONE_NUMBER',
         'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY',
         'GROQ_API_KEY', 'GROQ_API_KEY_FALLBACK', 'GROQ_MODEL',
         'GEMINI_API_KEY', 'MISTRAL_API_KEY',

@@ -65,8 +65,7 @@ module.exports = async function verify() {
     log(`   TRANSFER_ADMIN  : ${process.env.TRANSFER_ADMIN   || '(non défini)'}`);
     log(`   BOT_DRY_RUN     : ${process.env.BOT_DRY_RUN      || 'false'}`);
     log(`   GROQ_API_KEY    : ${process.env.GROQ_API_KEY ? '(défini)' : '⚠️  manquant — textes de secours uniquement'}`);
-    log(`   WhatsApp        : ${process.env.WHATSAPP_PROVIDER || 'twilio'}  ${process.env.TWILIO_WHATSAPP_NUMBER || '⚠️  TWILIO_WHATSAPP_NUMBER manquant'}`);
-    log(`   WA template     : ${process.env.TWILIO_WHATSAPP_CONTENT_SID || '(aucun — texte libre, sandbox ou fenêtre 24 h)'}`);
+    log(`   SMS             : ${process.env.TWILIO_PHONE_NUMBER || '⚠️  TWILIO_PHONE_NUMBER manquant'}`);
     log(`   Transfert humain: désactivé`);
 
     // ── Routing ────────────────────────────────────────────────────
