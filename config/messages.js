@@ -11,45 +11,35 @@
  */
 
 const WELCOME =
-    `Bonjour, Boxing Center. Je suis l'assistante vocale. ` +
-    `Posez votre question : planning, tarifs, essai, résiliation. ` +
-    `Vous pouvez aussi appuyer sur 1 pour les horaires, 2 pour les tarifs, ` +
-    `3 pour le planning, 4 pour une question administrative.`;
+    `Boxing Center, bonjour, c'est Carmen. ` +
+    `Dites-moi ce que vous cherchez. Un planning, un tarif, un essai…`;
 
 const MENU = WELCOME;
 
 const MENU_REPEAT =
-    `Je n'ai pas saisi. ` + WELCOME;
+    `Pardon, je n'ai pas saisi. ` + WELCOME;
 
 const ASK_REPEAT =
-    `Je n'ai pas bien entendu. Posez votre question après le signal, ` +
-    `ou appuyez sur une touche.`;
+    `Je n'ai pas bien entendu. Vous pouvez répéter, simplement.`;
 
 const ASK_DTMF_HINT =
-    `Dites votre question, ou appuyez sur 1 pour les horaires, ` +
-    `2 pour les tarifs, 3 pour le planning, ` +
-    `4 pour une résiliation ou une facture.`;
+    `Dites-moi votre question. Ou appuyez sur 1 pour les horaires, 2 pour les tarifs, 3 pour un planning, 4 pour une résiliation.`;
 
 const FOLLOW_UP =
-    `Autre question ? Appuyez sur 1 pour recevoir les liens par S.M.S., ` +
-    `sur 2 pour WhatsApp, sur 3 pour un rappel. Pour terminer, dites au revoir.`;
+    `Je peux vous aider sur autre chose ?`;
 
 const FOLLOW_UP_REPEAT =
-    `Souhaitez-vous autre chose ? Dites votre question, ` +
-    `ou appuyez sur 1 pour un S.M.S., 2 pour WhatsApp, 3 pour un rappel.`;
+    `Vous êtes toujours là ? Dites-moi si vous avez une autre question.`;
 
 const HUMAN_STEER =
-    `Je peux vous répondre maintenant. Quelle est votre question : ` +
-    `planning, tarifs, essai, résiliation ?`;
+    `Je peux vous le dire tout de suite. C'est pour un planning, un tarif, ou autre chose ?`;
 
 const SUB_MENU = FOLLOW_UP;
 
 const ANSWERS = {
     infos_pratiques:
-        `Nos cinq salles sont ouvertes du lundi au samedi, de 10 heures à 21 heures 30. ` +
-        `Le dimanche, elles sont fermées. ` +
-        `Dites-moi quelle salle vous intéresse pour le planning des cours : ` +
-        `Minimes, Portet, Ramonville, Saint-Cyprien ou États-Unis.`,
+        `Les salles sont ouvertes du lundi au samedi, de 10 heures à 21 heures 30. Dimanche, c'est fermé. ` +
+        `Pour le planning des cours, dites-moi quelle salle. Minimes, Portet, Ramonville, Saint-Cyprien, ou États-Unis.`,
 
     inscription:
         `L'offre en cours est à 29 euros toutes les 4 semaines, sans engagement, ` +
@@ -73,8 +63,7 @@ const ANSWERS = {
         `Je peux vous envoyer le lien par S.M.S.`,
 
     autre:
-        `Je peux vous renseigner sur les salles, les cours, les tarifs, l'essai ou la résiliation. ` +
-        `Quelle est votre question ?`,
+        `Dites-moi ce dont vous avez besoin. Un planning, un tarif, un essai, une résiliation…`,
 };
 
 const ANSWER_ALIASES = {
@@ -127,9 +116,7 @@ const TRANSFER_FAILED =
     `Je reste avec vous au téléphone. Posez votre question, je peux y répondre.`;
 
 const GOODBYE =
-    `Merci d'avoir appelé Boxing Center. ` +
-    `Nous espérons vous accueillir bientôt dans nos salles. ` +
-    `Bonne journée.`;
+    `Merci d'avoir appelé. À très bientôt chez Boxing Center. Belle journée.`;
 
 const OUTRO = FOLLOW_UP;
 

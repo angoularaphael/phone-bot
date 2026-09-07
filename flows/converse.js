@@ -15,6 +15,7 @@ const { chatCompletion, isAiEnabled } = require('../lib/llm');
 const { buildSystemPrompt } = require('../config/voice-prompt');
 const { classify } = require('../lib/classifier');
 const { getAnswer } = require('../config/messages');
+const { planningReply, GYMS } = require('../config/kb');
 const session = require('../lib/session');
 const {
     ASK_REPEAT,
@@ -57,24 +58,37 @@ function sanitizeSpeech(text) {
     t = t.replace(/https?:\/\/\S+/gi, '');
     t = t.replace(/[*_`#]+/g, '');
     t = t.replace(/\s+/g, ' ').trim();
-    if (t.length > 720) {
-        const cut = t.slice(0, 720);
+    if ((t.match(/[.!?]/g) || []).length < 1 && t.length > 40) {
+        t = t.replace(/\s+(vous |est-ce |sinon )/i, '. $1');
+    }
+    if (t && !/[.!?…]$/.test(t)) t += '.';
+    const words = t.split(/\s+/);
+    if (words.length > 58) {
+        const cut = words.slice(0, 58).join(' ');
         const m = cut.match(/^[\s\S]*[.!?]/);
-        t = (m ? m[0] : cut).trim();
+        t = (m && m[0].length > 40 ? m[0] : `${cut}.`).trim();
     }
     return t;
 }
 
+function contextBlob(callSid, question) {
+    const sess = session.get(callSid);
+    const gymLabel = sess.lastGym && GYMS[sess.lastGym] ? GYMS[sess.lastGym].fullLabel : '';
+    return [sess.lastQuestion, gymLabel ? `Salle déjà choisie : ${gymLabel}` : '', question]
+        .filter(Boolean)
+        .join('. ');
+}
+
 async function llmReply(callSid, question) {
     if (!isAiEnabled()) return null;
-    const system = buildSystemPrompt(question);
+    const system = buildSystemPrompt(contextBlob(callSid, question));
     const history = session.historyForLlm(callSid);
     const messages = [
         { role: 'system', content: system },
         ...history,
         { role: 'user', content: question },
     ];
-    const { content } = await chatCompletion(messages, { maxTokens: 280, temperature: 0.35 });
+    const { content } = await chatCompletion(messages, { maxTokens: 160, temperature: 0.4 });
     return sanitizeSpeech(content);
 }
 
@@ -83,16 +97,29 @@ function fallbackReply(question) {
 }
 
 async function answerQuestion(callSid, question) {
+    const sess = session.get(callSid);
+    const planned = planningReply(question, sess.lastGym, sess.lastQuestion);
+    if (planned.gym) session.touch(callSid, { lastGym: planned.gym });
+
     session.pushTurn(callSid, 'user', question);
-    let text = null;
-    try {
-        text = await llmReply(callSid, question);
-    } catch (e) {
-        warn(`LLM converse: ${e.message}`);
+
+    let text = planned.text || null;
+    if (!text) {
+        try {
+            text = await llmReply(callSid, question);
+        } catch (e) {
+            warn(`LLM converse: ${e.message}`);
+        }
     }
     if (!text) text = fallbackReply(question);
+
+    text = sanitizeSpeech(text);
     session.pushTurn(callSid, 'assistant', text);
-    session.touch(callSid, { lastMotif: inferMotif(question), lastQuestion: question });
+    session.touch(callSid, {
+        lastMotif: inferMotif(question),
+        lastQuestion: question,
+        lastGym: planned.gym || sess.lastGym || null,
+    });
     await updateCall(callSid, {
         motif: inferMotif(question),
         notes: String(question).slice(0, 240),

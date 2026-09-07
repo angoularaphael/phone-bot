@@ -22,7 +22,7 @@ const GYMS = {
     address: '12 rue de Fenouillet, 31200 Toulouse',
     manager: 'Mehdi',
     url: 'https://boxe-toulouse.com/',
-    match: /minimes|barri[eè]re\s*de\s*paris|fenouillet/i,
+    match: /minimes|\bminime\b|barri[eè]re\s*de\s*paris|fenouillet/i,
   },
   ramonville: {
     label: 'Ramonville',
@@ -30,7 +30,7 @@ const GYMS = {
     address: '33 rue des Ormes, 31520 Ramonville-Saint-Agne',
     manager: 'Pascal',
     url: 'https://mmatoulouse.com/',
-    match: /ramonville|saint[-\s]?agne|des\s+ormes/i,
+    match: /ramonville|ramon\s*ville|saint[-\s]?agne|des\s+ormes/i,
   },
   'st-cyprien': {
     label: 'St-Cyprien',
@@ -38,7 +38,7 @@ const GYMS = {
     address: '11 rue Sainte-Lucie, 31300 Toulouse',
     manager: 'Dadi',
     url: 'https://boxingcenter.fr/salle-de-sport-toulouse/boxing-center-salle-de-toulouse-saint-cyprien/',
-    match: /st[-\s]?cyprien|saint[-\s]?cyprien|sainte[-\s]?lucie|fer\s+[àa]\s+cheval/i,
+    match: /st[-\s.]?cyprien|saint[-\s.]?cyprien|\bcyprien\b|\bsiprien\b|\bciprien\b|sainte[-\s]?lucie|fer\s+[àa]\s+cheval/i,
   },
   portet: {
     label: 'Portet',
@@ -54,7 +54,7 @@ const GYMS = {
     address: '388 avenue des États-Unis, 31200 Toulouse',
     manager: 'Sébastien',
     url: 'https://boxingcenter.fr/salle-de-sport-toulouse/boxing-center-salle-de-toulouse-etats-unis/',
-    match: /[eé]tats[-\s]?unis|lalande|33\s?b/i,
+    match: /[eé]tats[-\s]?unis|etat\s*unis|lalande|33\s?b/i,
   },
 };
 
@@ -443,9 +443,48 @@ const PLANNING_INTENT =
 const DISCIPLINE_INTENT =
   /boxe|boxing|anglaise|tha[iï]|k1|kick|pieds[-\s]?poings|mma|grappling|jjb|jiu|savate|fran[çc]aise|hyrox|cross|hiit|lady|sparring|baby|[ée]ducative|camp|enfant|ado/i;
 
+function foldSpeech(text) {
+  return String(text || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/siprien|ciprien|si\s*prien|cy\s*prien/g, 'cyprien')
+    .replace(/ramon\s+ville/g, 'ramonville')
+    .replace(/etats?\s+unis/g, 'etats-unis')
+    .replace(/\bminime\b(?!s)/g, 'minimes');
+}
+
 function detectGyms(text) {
-  const t = String(text || '');
+  const t = foldSpeech(text);
   return Object.keys(GYMS).filter((id) => GYMS[id].match.test(t));
+}
+
+/** Réponse vocale courte quand on a la salle et qu'on parle planning. */
+const SPOKEN_PLANNING = {
+  minimes:
+    'À Minimes, 12 rue de Fenouillet. Le soir, c\'est surtout la boxe anglaise avec Mehdi. Lundi, Boxing Camp à midi quarante, puis Boxe Anglaise loisirs à 19 heures 40. Boxing Lady le lundi et le mercredi à 18 heures 30. Les enfants, mercredi et samedi après-midi. Vous voulez un jour en particulier ?',
+  ramonville:
+    'À Ramonville, 33 rue des Ormes. Le soir, Lady Punch avec Sonia à 18 heures, puis pieds-poings, et Boxe Anglaise avec Farouk vers 19 heures 45. Mardi et jeudi, Jérôme fait Grappling puis MMA, débutants acceptés. Les enfants, mercredi et samedi avec Valentin Guth. Quel jour vous arrange ?',
+  'st-cyprien':
+    'À Saint-Cyprien, 11 rue Sainte-Lucie, près du Fer à Cheval. Le soir, c\'est boxe et thaï. Lundi : Boxing Camp à 18 heures 20 avec Brice, Cross Training à 19 heures, Boxe Anglaise à 20 heures avec Dadi. Mardi : Lady Punch, Grappling, puis Boxe Thaï. Mercredi, il y a aussi l\'HYROX. Les enfants, mercredi et samedi. Vous voulez un jour précis ?',
+  portet:
+    'À Portet, 61 route d\'Espagne. Le planning est encore provisoire. Le soir, Boxe Anglaise avec Valentin Tapia, Kick et K1 avec Samuel Pinto. Mardi : Lady Kick à 18 heures, Kick à 19 heures, Boxe Anglaise à 20 heures. Mercredi, il y a aussi les cours enfants. Quel jour vous intéresse ?',
+  'etats-unis':
+    'Aux États-Unis, 388 avenue des États-Unis. Trois espaces. Le soir, Renaud en boxe et pieds-poings, Zouhir en MMA et grappling, et Yannis en HYROX ou Cross Training. Les enfants pieds-poings, mercredi et samedi. Vous voulez la boxe, le MMA, ou le fitness ?',
+};
+
+function planningReply(text, lastGym, lastQuestion) {
+  const merged = `${lastQuestion || ''} ${text || ''} ${lastGym || ''}`;
+  const gyms = detectGyms(`${text || ''} ${lastGym || ''} ${lastQuestion || ''}`);
+  const gym = gyms[0] || lastGym || null;
+  const wordCount = String(text || '').trim().split(/\s+/).filter(Boolean).length;
+  const shortGymAnswer = detectGyms(text || '').length > 0 && wordCount <= 6;
+  const wantsPlanning = PLANNING_INTENT.test(foldSpeech(merged))
+    || /planning|horaire|cours|creneau/i.test(lastQuestion || '');
+  if (gym && SPOKEN_PLANNING[gym] && (wantsPlanning || shortGymAnswer)) {
+    return { gym, text: SPOKEN_PLANNING[gym] };
+  }
+  return { gym, text: null };
 }
 
 /**
@@ -634,8 +673,11 @@ module.exports = {
   SECTIONS,
   PLANNINGS,
   GYM_INDEX,
+  SPOKEN_PLANNING,
+  foldSpeech,
   detectGyms,
   planningContext,
+  planningReply,
   selectSections,
   buildKnowledge,
 };
