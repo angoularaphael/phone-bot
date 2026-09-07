@@ -1,79 +1,82 @@
 'use strict';
 
 /**
- * ═══════════════════════════════════════════════════════════════
  * Messages vocaux du bot téléphonique — Boxing Center
  * Langue : français | Voix : Polly.Lea-Neural
- * ═══════════════════════════════════════════════════════════════
  *
- * Convention d'écriture pour le TTS :
- *   - Virgules et points pour les pauses naturelles
- *   - Pas d'abréviations (écrire "euros" et non "€", "S.M.S." pour SMS)
- *   - Chiffres en toutes lettres si besoin de clarté
+ * Convention TTS :
+ *   - Virgules et points pour les pauses
+ *   - Pas d'abréviations (« euros », « S.M.S. »)
+ *   - Jamais « par mois » pour l'offre 29 euros (prélèvement toutes les 4 semaines)
  */
 
-// ─── Accueil ──────────────────────────────────────────────────────────────────
-
 const WELCOME =
-    `Bonjour et bienvenue chez Boxing Center, ` +
-    `votre salle de boxe anglaise et kick-boxing. `;
+    `Bonjour, Boxing Center. Je suis l'assistante vocale. ` +
+    `Posez votre question : planning, tarifs, essai, résiliation. ` +
+    `Vous pouvez aussi appuyer sur 1 pour les horaires, 2 pour les tarifs, ` +
+    `3 pour le planning, 4 pour une question administrative.`;
 
-// ─── Menu principal (5 options) ────────────────────────────────────────────────
-
-const MENU =
-    `Pour vous orienter, écoutez les options suivantes. ` +
-    `Pour les horaires, l'accès à la salle et le planning des cours, appuyez sur 1. ` +
-    `Pour les tarifs, réserver une séance d'essai gratuite ou vous inscrire, appuyez sur 2. ` +
-    `Pour la compétition, appuyez sur 3. ` +
-    `Pour une question administrative, une résiliation ou une facture, appuyez sur 4. ` +
-    `Pour parler directement à un conseiller, appuyez sur 5.`;
+const MENU = WELCOME;
 
 const MENU_REPEAT =
-    `Je n'ai pas saisi votre choix. ` + MENU;
+    `Je n'ai pas saisi. ` + WELCOME;
 
-// ─── Sous-menu après chaque réponse ──────────────────────────────────────────
+const ASK_REPEAT =
+    `Je n'ai pas bien entendu. Posez votre question après le signal, ` +
+    `ou appuyez sur une touche.`;
 
-const SUB_MENU =
-    `Que souhaitez-vous faire ensuite ? ` +
-    `Pour recevoir ces informations par S.M.S. sur votre mobile, appuyez sur 1. ` +
-    `Pour les recevoir sur WhatsApp, appuyez sur 2. ` +
-    `Pour être rappelé par un conseiller, appuyez sur 3. ` +
-    `Pour parler à un conseiller maintenant, appuyez sur 4. ` +
-    `Pour revenir au menu principal, appuyez sur étoile.`;
+const ASK_DTMF_HINT =
+    `Dites votre question, ou appuyez sur 1 pour les horaires, ` +
+    `2 pour les tarifs, 3 pour le planning, ` +
+    `4 pour une résiliation ou une facture.`;
 
-// ─── Réponses par motif ───────────────────────────────────────────────────────
+const FOLLOW_UP =
+    `Autre question ? Appuyez sur 1 pour recevoir les liens par S.M.S., ` +
+    `sur 2 pour WhatsApp, sur 3 pour un rappel. Pour terminer, dites au revoir.`;
+
+const FOLLOW_UP_REPEAT =
+    `Souhaitez-vous autre chose ? Dites votre question, ` +
+    `ou appuyez sur 1 pour un S.M.S., 2 pour WhatsApp, 3 pour un rappel.`;
+
+const HUMAN_STEER =
+    `Je peux vous répondre maintenant. Quelle est votre question : ` +
+    `planning, tarifs, essai, résiliation ?`;
+
+const SUB_MENU = FOLLOW_UP;
 
 const ANSWERS = {
-
-    // Fusion horaires + planning (touche 1)
     infos_pratiques:
-        `Nos salles sont ouvertes du lundi au vendredi de 9 heures à 21 heures 30, ` +
-        `le samedi de 9 heures à 18 heures, et le dimanche de 9 heures à 13 heures. ` +
-        `Nous proposons plus de 30 cours par semaine : boxe anglaise, kick-boxing, savate et fitness combat. ` +
-        `L'adresse et le planning complet sont disponibles sur notre site internet. `,
+        `Nos cinq salles sont ouvertes du lundi au samedi, de 10 heures à 21 heures 30. ` +
+        `Le dimanche, elles sont fermées. ` +
+        `Dites-moi quelle salle vous intéresse pour le planning des cours : ` +
+        `Minimes, Portet, Ramonville, Saint-Cyprien ou États-Unis.`,
 
-    // Fusion tarifs + essai + inscription (touche 2)
     inscription:
-        `Nos abonnements adultes débutent à 45 euros par mois, ` +
-        `avec des tarifs réduits pour les enfants et les étudiants. ` +
-        `La séance d'essai est gratuite et sans engagement, tous niveaux acceptés. ` +
-        `Pour vous inscrire, présentez-vous à l'accueil avec une pièce d'identité, ou inscrivez-vous en ligne. `,
+        `L'offre en cours est à 29 euros toutes les 4 semaines, sans engagement, ` +
+        `soit tous les 28 jours, ce n'est pas un prélèvement mensuel. ` +
+        `Pour l'année, 259 euros les 12 mois, c'est le plus avantageux si vous pratiquez sur la saison. ` +
+        `L'inscription se fait en ligne sur la boutique. ` +
+        `La séance d'essai est à 10 euros si vous préférez tester avant.`,
 
     competition:
-        `Boxing Center dispose d'une équipe compétition active, ` +
-        `présente aux galeas régionaux et aux championnats nationaux. ` +
-        `L'intégration se fait généralement après 3 mois de cours réguliers. `,
+        `Boxing Center a un pôle compétition. ` +
+        `Les cours indiqués compétiteurs sont réservés aux pratiquants confirmés, ` +
+        `ce n'est pas une découverte. ` +
+        `Pour commencer, un cours loisirs tous niveaux convient mieux. ` +
+        `Dans quelle salle souhaitez-vous vous entraîner ?`,
 
     administratif:
-        `Pour toute question administrative, résiliation, modification de contrat ou demande de facture, ` +
-        `notre équipe est disponible du lundi au vendredi de 9 heures à 17 heures. ` +
-        `Vos documents sont aussi accessibles sur votre espace membre en ligne. `,
+        `Pour résilier un abonnement sans engagement, c'est uniquement en ligne : ` +
+        `Gérer mon abonnement, puis Résilier mon abonnement. ` +
+        `Une demande orale ne suffit pas. ` +
+        `Enregistrez la demande plus de 72 heures avant le prochain prélèvement. ` +
+        `Je peux vous envoyer le lien par S.M.S.`,
 
     autre:
-        `Nos conseillers répondront à votre demande. `,
+        `Je peux vous renseigner sur les salles, les cours, les tarifs, l'essai ou la résiliation. ` +
+        `Quelle est votre question ?`,
 };
 
-/** Anciens motifs → nouveaux (rétrocompatibilité) */
 const ANSWER_ALIASES = {
     horaires:     'infos_pratiques',
     planning:     'infos_pratiques',
@@ -86,8 +89,6 @@ function getAnswer(motif) {
     return ANSWERS[key] || ANSWERS.autre;
 }
 
-// ─── Collecte des coordonnées ─────────────────────────────────────────────────
-
 const COLLECT_NAME =
     `Pour vous envoyer les informations par S.M.S., j'ai besoin de votre prénom. ` +
     `Dites votre prénom après le signal.`;
@@ -98,8 +99,6 @@ const COLLECT_NAME_FALLBACK =
 const COLLECT_PHONE =
     `Merci ! Sur quel numéro souhaitez-vous recevoir le S.M.S. ? ` +
     `Saisissez votre numéro de téléphone à 10 chiffres sur le clavier.`;
-
-// ─── Confirmations ───────────────────────────────────────────────────────────
 
 const SMS_CONFIRM =
     (name) => `Parfait${name ? `, ${name}` : ''} ! ` +
@@ -119,36 +118,33 @@ const COLLECT_PHONE_WA =
 
 const CALLBACK_CONFIRM =
     `Votre demande de rappel a bien été enregistrée. ` +
-    `Un de nos conseillers vous contactera dans les meilleurs délais, ` +
-    `aux horaires d'ouverture du lundi au samedi.`;
+    `Nous vous recontacterons dans les meilleurs délais, ` +
+    `du lundi au samedi.`;
 
-const TRANSFER_WAIT =
-    `Je vous mets en relation avec un conseiller Boxing Center. ` +
-    `Veuillez patienter quelques instants.`;
+const TRANSFER_WAIT = HUMAN_STEER;
 
 const TRANSFER_FAILED =
-    `Nos conseillers ne sont pas disponibles pour le moment. ` +
-    `Vous pouvez laisser un message après le signal, ` +
-    `et nous vous rappellerons dès que possible.`;
-
-// ─── Au revoir ────────────────────────────────────────────────────────────────
+    `Je reste avec vous au téléphone. Posez votre question, je peux y répondre.`;
 
 const GOODBYE =
     `Merci d'avoir appelé Boxing Center. ` +
-    `Nous espérons vous accueillir très bientôt dans nos salles. ` +
-    `Bonne journée et à très bientôt !`;
+    `Nous espérons vous accueillir bientôt dans nos salles. ` +
+    `Bonne journée.`;
 
-const OUTRO =
-    `Pour revenir au menu principal, appuyez sur étoile. ` +
-    `Pour terminer l'appel, raccrochez.`;
+const OUTRO = FOLLOW_UP;
 
 const NO_INPUT =
-    `Je n'ai pas reçu de réponse. Revenons au menu principal. `;
+    `Je n'ai pas reçu de réponse. `;
 
 module.exports = {
     WELCOME,
     MENU,
     MENU_REPEAT,
+    ASK_REPEAT,
+    ASK_DTMF_HINT,
+    FOLLOW_UP,
+    FOLLOW_UP_REPEAT,
+    HUMAN_STEER,
     SUB_MENU,
     ANSWERS,
     getAnswer,

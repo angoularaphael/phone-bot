@@ -10,6 +10,7 @@
  */
 
 const { updateCall } = require('../lib/tracker');
+const { drop }       = require('../lib/session');
 const { log }        = require('../lib/logger');
 
 async function statusCallback(req, res) {
@@ -24,6 +25,9 @@ async function statusCallback(req, res) {
             status:      status === 'completed' ? 'completed' : status,
             durationSec: duration || null,
         });
+        if (status === 'completed' || status === 'busy' || status === 'failed' || status === 'no-answer' || status === 'canceled') {
+            drop(callSid);
+        }
     }
 
     res.sendStatus(204);

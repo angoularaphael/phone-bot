@@ -2,15 +2,14 @@
 
 /**
  * Accueil de l'appel entrant.
- * Joue le message de bienvenue + le menu principal.
- * Enregistre l'appel dans Supabase.
+ * Conversation vocale — pas de menu « parler à un conseiller ».
  */
 
-const { buildGather }   = require('../lib/twiml');
-const { saveCall }      = require('../lib/tracker');
-const { voiceUrl }      = require('../lib/url');
-const { log }           = require('../lib/logger');
-const { WELCOME, MENU } = require('../config/messages');
+const { buildVoiceGather } = require('../lib/twiml');
+const { saveCall }         = require('../lib/tracker');
+const { voiceUrl }         = require('../lib/url');
+const { log }              = require('../lib/logger');
+const { WELCOME }          = require('../config/messages');
 
 async function welcome(req, res) {
     const callSid = req.body.CallSid;
@@ -21,11 +20,10 @@ async function welcome(req, res) {
 
     await saveCall({ callSid, caller, called, status: 'in_progress' });
 
-    const twiml = buildGather({
-        say:       WELCOME + MENU,
-        action:    voiceUrl('dispatch'),
-        numDigits: 1,
-        timeout:   12,
+    const twiml = buildVoiceGather({
+        say:     WELCOME,
+        action:  voiceUrl('converse'),
+        timeout: 8,
     });
 
     res.type('text/xml');

@@ -64,12 +64,14 @@ module.exports = async function verify() {
     log(`   TRANSFER_ACCUEIL: ${process.env.TRANSFER_ACCUEIL || '(non défini)'}`);
     log(`   TRANSFER_ADMIN  : ${process.env.TRANSFER_ADMIN   || '(non défini)'}`);
     log(`   BOT_DRY_RUN     : ${process.env.BOT_DRY_RUN      || 'false'}`);
+    log(`   GROQ_API_KEY    : ${process.env.GROQ_API_KEY ? '(défini)' : '⚠️  manquant — textes de secours uniquement'}`);
+    log(`   Transfert humain: désactivé`);
 
     // ── Routing ────────────────────────────────────────────────────
     log(`\n📞 Routing des motifs :`);
     const { routes } = require('../config/routing');
     for (const [motif, r] of Object.entries(routes())) {
-        const dest = r.transfer || '(pas de transfert)';
+        const dest = r.transfer ? r.transfer : 'conversation (pas de transfert)';
         console.log(`   ${r.digit}  ${r.label.padEnd(30)} → ${dest}`);
     }
 

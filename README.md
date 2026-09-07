@@ -1,8 +1,9 @@
 # Boxing Center — Phone Bot
 
-Bot téléphonique pour la ligne principale de Boxing Center.
-Gère les appels entrants via **Twilio**, répond aux questions fréquentes,
-envoie des SMS/WhatsApp, collecte les coordonnées et transfère vers un conseiller.
+Bot téléphonique de la ligne principale Boxing Center (09 39 03 67 48).
+Gère les appels via **Twilio** : conversation vocale (Polly Lea + Groq), SMS / WhatsApp, demande de rappel.
+
+**Aucun transfert vers un humain.** Le bot répond lui-même (planning, tarifs, essai, résiliation, salles).
 
 ---
 
@@ -10,45 +11,34 @@ envoie des SMS/WhatsApp, collecte les coordonnées et transfère vers un conseil
 
 | Feature | Détail |
 |---|---|
-| Accueil vocal | Message de bienvenue + menu à 5 choix |
-| Identification du motif | DTMF (touches) + classification vocale |
-| Réponses automatiques | 8 catégories pré-enregistrées (voix Polly Lea-Neural) |
-| Envoi SMS | Informations + lien URL personnalisé par motif |
-| WhatsApp | Via Twilio Sandbox ou numéro Business |
-| Collecte coordonnées | Prénom (reconnaissance vocale) + téléphone (DTMF) |
-| Demande de rappel | Enregistrée en base avec nom + numéro |
-| Transfert humain | Renvoi vers un conseiller selon le motif |
-| Répondeur | Enregistrement vocal si conseiller indisponible |
-| Supabase | Historique complet + tableau de bord |
+| Accueil vocal | Invitation à poser une question (parole) |
+| Conversation | STT Twilio + Groq (faits de `config/kb.js`) + TTS Polly |
+| Touches de secours | 1 horaires · 2 tarifs · 3 planning · 4 administratif |
+| Envoi SMS / WhatsApp | Liens boutique, Gérer mon abo, essai |
+| Demande de rappel | Enregistrée en base (pas un transfert live) |
+| Supabase | Historique d'appels |
 
 ---
 
-## Motifs d'appel gérés
-
-| Touche | Motif |
-|:---:|---|
-| 1 | Horaires et planning |
-| 2 | Tarifs, essai gratuit et inscription |
-| 3 | Compétition |
-| 4 | Administratif / facture |
-| 5 | Parler à un conseiller |
-
----
-
-## Arbre de décision
+## Parcours d'appel
 
 ```
 Appel entrant
-  └─ Accueil + Menu principal (touches 1-5)
-       ├─ 1-4 → Réponse vocale automatique
-       │               └─ Sous-menu :
-       │                    ├─ 1 → Envoyer SMS
-       │                    ├─ 2 → WhatsApp
-       │                    ├─ 3 → Demande de rappel
-       │                    ├─ 4 → Transfert humain
-       │                    └─ * → Retour menu
-       └─ 5 → Transfert humain direct
+  └─ Accueil : « Posez votre question »
+       ├─ Parole → réponse IA (base Boxing Center) → autre question ?
+       ├─ Touche 1-4 → même cerveau, question synthétique
+       └─ Après une réponse :
+            1 SMS · 2 WhatsApp · 3 rappel · parole = suite
 ```
+
+Pas de touche « conseiller ». Si l'appelant demande à parler à quelqu'un, le bot traite la demande.
+
+Faits de référence (alignés sur la boutique, 24/08/2026) :
+
+- Ouverture : lundi–samedi 10h–21h30. Dimanche fermé.
+- Offre : 29 € toutes les 4 semaines (28 jours, jamais « par mois ») · 259 € / 12 mois.
+- Essai : 10 € (après les offres d'abonnement).
+- Résiliation sans engagement : uniquement en ligne (Gérer mon abonnement).
 
 ---
 
@@ -58,40 +48,23 @@ Appel entrant
 cd phone-bot
 npm install
 cp .env.example .env
-# Remplir les valeurs dans .env
 ```
 
 ### Prérequis
 
-1. **Compte Twilio** avec un numéro de téléphone (voix + SMS)
-2. **ngrok** (en développement) pour exposer le serveur en HTTPS
-3. **Supabase** — exécuter le SQL de migration
-
-### Migration Supabase
-
-Exécuter dans l'éditeur SQL de Supabase :
-
-```sql
--- Coller le contenu de supabase/001_phone_bot.sql
-```
+1. Compte Twilio (voix + SMS)
+2. Clé Groq (`GROQ_API_KEY`, préfixe `gsk_`) — relais Gemini / Mistral possibles
+3. HTTPS public (`BASE_URL`) pour les webhooks
+4. Supabase — migration `supabase/001_phone_bot.sql`
 
 ---
 
 ## Démarrage
 
 ```bash
-# Démarrer le serveur
 npm start
-# ou
-node index.js
-
-# Vérifier les connexions
 node index.js --verify
-
-# Rapport des appels
 node index.js --report
-
-# Mode développement (logs détaillés)
 node index.js --dev
 ```
 
@@ -99,19 +72,10 @@ node index.js --dev
 
 ## Configuration Twilio
 
-Dans **Twilio Console → Phone Numbers → votre numéro** :
-
 | Champ | Valeur |
 |---|---|
-| Voice — A call comes in | Webhook — `POST https://VOTRE_URL/voice` |
+| Voice — A call comes in | `POST https://VOTRE_URL/voice` |
 | Voice — Status callback URL | `POST https://VOTRE_URL/voice/status` |
-
-En développement avec ngrok :
-
-```bash
-ngrok http 3000
-# Copier l'URL HTTPS générée dans BASE_URL du .env
-```
 
 ---
 
@@ -119,66 +83,38 @@ ngrok http 3000
 
 | Variable | Description |
 |---|---|
-| `BASE_URL` | URL publique du serveur (HTTPS requis par Twilio) |
-| `TWILIO_ACCOUNT_SID` | SID de votre compte Twilio |
-| `TWILIO_AUTH_TOKEN` | Token d'authentification Twilio |
-| `TWILIO_PHONE_NUMBER` | Numéro Twilio au format E.164 (+33...) |
-| `TWILIO_WHATSAPP_NUMBER` | Numéro WhatsApp Twilio Sandbox |
-| `SUPABASE_URL` | URL du projet Supabase |
-| `SUPABASE_SERVICE_ROLE_KEY` | Clé service Supabase |
-| `TRANSFER_ACCUEIL` | Numéro de renvoi — accueil général |
-| `TRANSFER_ADMIN` | Numéro de renvoi — service administratif |
-| `TRANSFER_COMPETITION` | Numéro de renvoi — responsable compétition |
-| `LINK_ESSAI` | URL de réservation séance d'essai |
-| `LINK_PLANNING` | URL du planning en ligne |
-| `BOT_DRY_RUN` | `true` = simulation sans SMS ni transfert |
+| `BASE_URL` | URL publique HTTPS |
+| `TWILIO_*` | Compte et numéro Twilio |
+| `GROQ_API_KEY` | Clé Groq (conversation) |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Historique appels |
+| `LINK_GERER_ABO` | Lien SMS résiliation |
+| `BOT_DRY_RUN` | `true` = pas de SMS réel |
+| `USE_AI_REPLY` | `false` = textes figés uniquement |
+
+`TRANSFER_ACCUEIL` / `_ADMIN` / `_COMPETITION` peuvent rester dans le `.env` : elles **ne sont plus lues**.
 
 ---
 
-## Structure du projet
+## Structure
 
 ```
 phone-bot/
-├── index.js              ← Serveur Express (point d'entrée)
+├── index.js
 ├── config/
-│   ├── messages.js       ← Tous les messages vocaux (TTS)
-│   └── routing.js        ← Table de routage motif → numéro + SMS
+│   ├── kb.js             ← faits (copie de bc-knowledge.js)
+│   ├── voice-prompt.js   ← règles téléphone (jamais transférer)
+│   ├── messages.js       ← TTS accueil / secours
+│   └── routing.js
 ├── flows/
-│   ├── welcome.js        ← Accueil de l'appel entrant
-│   ├── menu.js           ← Menu principal (rappelable)
-│   ├── dispatch.js       ← Aiguillage par touche
-│   ├── answer.js         ← Réponse vocale + sous-menu
-│   ├── sub.js            ← Traitement du sous-menu
-│   ├── collect.js        ← Collecte prénom + téléphone
-│   ├── callback.js       ← Demande de rappel
-│   ├── human.js          ← Transfert + fallback + répondeur
-│   ├── bye.js            ← Au revoir + raccrochage
-│   └── status.js         ← Webhook statut fin d'appel
+│   ├── welcome.js
+│   ├── converse.js       ← boucle vocale
+│   ├── human.js          ← redirige vers converse (plus de Dial)
+│   └── …
 ├── lib/
-│   ├── logger.js         ← log / warn / err
-│   ├── url.js            ← Construction des URLs webhook
-│   ├── twiml.js          ← Générateurs TwiML
-│   ├── classifier.js     ← Classification vocale → motif
-│   ├── sms.js            ← Envoi SMS + WhatsApp
-│   ├── tracker.js        ← Persistance Supabase
-│   └── transfer.js       ← Résolution du numéro de transfert
-├── scripts/
-│   ├── verify.js         ← Test des connexions
-│   └── report.js         ← Rapport appels + rappels
-└── supabase/
-    └── 001_phone_bot.sql ← Schéma de la base de données
+│   ├── llm.js
+│   ├── session.js
+│   ├── classifier.js     ← secours si Groq down
+│   └── transfer.js       ← toujours null
 ```
 
----
-
-## Tableau de suivi (Supabase)
-
-La vue `phone_calls_dashboard` agrège par jour et motif :
-
-- Nombre total d'appels
-- SMS envoyés
-- Demandes de rappel
-- Transferts effectués
-- Durée moyenne d'appel
-
-La vue `pending_callbacks` liste les rappels en attente à traiter.
+Toute mise à jour de planning ou tarif : répercuter dans `config/kb.js` **et** `BOXPLUS/storefront/lib/bc-knowledge.js`.

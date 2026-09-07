@@ -15,7 +15,7 @@
  *   Envoie le SMS et confirme.
  */
 
-const { buildSpeechGather, buildGather, buildSay, buildRedirect } = require('../lib/twiml');
+const { buildSpeechGather, buildGather, buildVoiceGather, buildRedirect } = require('../lib/twiml');
 const { voiceUrl }    = require('../lib/url');
 const { sendSms, buildSmsBody } = require('../lib/sms');
 const { updateCall }  = require('../lib/tracker');
@@ -26,7 +26,7 @@ const {
     COLLECT_NAME_FALLBACK,
     COLLECT_PHONE,
     SMS_CONFIRM,
-    OUTRO,
+    FOLLOW_UP,
 } = require('../config/messages');
 
 // ─── Étape 1 : Prénom ────────────────────────────────────────────────────────
@@ -110,13 +110,12 @@ async function collectSave(req, res) {
 
     log(`📋 Collecte — CallSid: ${callSid}  Prénom: ${name || '(vide)'}  Tel: ${toPhone || '?'}  SMS: ${smsSent}`);
 
-    const confirmText = SMS_CONFIRM(name) + ' ' + OUTRO;
+    const confirmText = SMS_CONFIRM(name) + ' ' + FOLLOW_UP;
     res.type('text/xml');
-    res.send(buildGather({
-        say:       confirmText,
-        action:    voiceUrl('dispatch'),
-        numDigits: 1,
-        timeout:   8,
+    res.send(buildVoiceGather({
+        say:     confirmText,
+        action:  voiceUrl('converse', { phase: 'after' }),
+        timeout: 8,
     }));
 }
 

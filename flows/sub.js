@@ -1,55 +1,45 @@
 'use strict';
 
 /**
- * Sous-menu après la réponse vocale.
- *
- * Digits reçus :
- *   1  → envoyer un SMS
- *   2  → envoyer sur WhatsApp
- *   3  → demander un rappel
- *   4  → parler à un conseiller (transfert)
- *   *  → retour menu principal
- *   timeout / autre → rejouer la réponse
- *
- * URL attendue : POST /voice/sub?motif=seance_essai
+ * Après une réponse vocale (flux historique).
+ * 1 SMS · 2 WhatsApp · 3 rappel · parole = nouvelle question.
+ * Plus de touche « conseiller ».
  */
 
-const { buildRedirect, buildGather } = require('../lib/twiml');
-const { voiceUrl }                   = require('../lib/url');
-const { getAnswer, SUB_MENU, NO_INPUT } = require('../config/messages');
+const { buildRedirect, buildVoiceGather } = require('../lib/twiml');
+const { voiceUrl } = require('../lib/url');
+const { FOLLOW_UP, NO_INPUT } = require('../config/messages');
 
 function sub(req, res) {
     const digit = req.body.Digits;
-    const motif = req.query.motif || 'autre';
+    const speech = (req.body.SpeechResult || '').trim();
+    const motif = req.query.motif || 'infos_pratiques';
 
     res.type('text/xml');
+
+    if (speech) {
+        const { converse } = require('./converse');
+        return converse(req, res);
+    }
 
     switch (digit) {
         case '1':
             return res.send(buildRedirect(voiceUrl('collect/name', { motif })));
-
         case '2':
             return res.send(buildRedirect(voiceUrl('whatsapp/name', { motif })));
-
         case '3':
             return res.send(buildRedirect(voiceUrl('callback', { motif })));
-
-        case '4':
-            return res.send(buildRedirect(voiceUrl('human', { motif })));
-
         case '*':
-            return res.send(buildRedirect(voiceUrl('menu')));
-
-        default: {
-            const answerText = getAnswer(motif);
-            const fullText   = `${NO_INPUT}${answerText} ${SUB_MENU}`;
-            return res.send(buildGather({
-                say:       fullText,
-                action:    voiceUrl('sub', { motif }),
-                numDigits: 1,
-                timeout:   12,
+            return res.send(buildRedirect(voiceUrl('bye')));
+        case '4':
+        case '5':
+            return res.send(buildRedirect(voiceUrl('human', { motif })));
+        default:
+            return res.send(buildVoiceGather({
+                say:     NO_INPUT + FOLLOW_UP,
+                action:  voiceUrl('converse', { phase: 'after' }),
+                timeout: 8,
             }));
-        }
     }
 }
 

@@ -1,7 +1,7 @@
 {
   "name": "phone-bot",
   "version": "1.0.0",
-  "description": "Bot téléphonique — ligne principale Boxing Center (accueil, orientation, SMS, rappel)",
+  "description": "Bot téléphonique Boxing Center — conversation vocale, sans transfert humain",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {

@@ -14,7 +14,7 @@
  *   Envoie le message WhatsApp et confirme.
  */
 
-const { buildSpeechGather, buildGather, buildRedirect } = require('../lib/twiml');
+const { buildSpeechGather, buildGather, buildVoiceGather, buildRedirect } = require('../lib/twiml');
 const { voiceUrl }          = require('../lib/url');
 const { sendWhatsApp, buildSmsBody } = require('../lib/sms');
 const { updateCall }        = require('../lib/tracker');
@@ -24,7 +24,7 @@ const {
     COLLECT_NAME_WA,
     COLLECT_PHONE_WA,
     WHATSAPP_CONFIRM,
-    OUTRO,
+    FOLLOW_UP,
 } = require('../config/messages');
 
 // ─── Étape 1 : Prénom ────────────────────────────────────────────────────────
@@ -100,13 +100,12 @@ async function whatsappSave(req, res) {
 
     log(`💬 WhatsApp — CallSid: ${callSid}  Prénom: ${name || '(vide)'}  Tel: ${toPhone || '?'}  WA: ${waSent}`);
 
-    const confirmText = WHATSAPP_CONFIRM(name) + ' ' + OUTRO;
+    const confirmText = WHATSAPP_CONFIRM(name) + ' ' + FOLLOW_UP;
     res.type('text/xml');
-    res.send(buildGather({
-        say:       confirmText,
-        action:    voiceUrl('dispatch'),
-        numDigits: 1,
-        timeout:   8,
+    res.send(buildVoiceGather({
+        say:     confirmText,
+        action:  voiceUrl('converse', { phase: 'after' }),
+        timeout: 8,
     }));
 }
 

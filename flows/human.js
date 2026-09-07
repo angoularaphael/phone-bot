@@ -1,98 +1,53 @@
 'use strict';
 
 /**
- * Transfert de l'appel vers un conseiller humain.
- *
- * Si le numéro de transfert est configuré → <Dial>
- * Sinon → proposition de laisser un message vocal (enregistrement)
- *
- * URL : POST /voice/human?motif=...
- * URL fallback (appel non décroché) : POST /voice/fallback?motif=...
+ * Ancien transfert humain : plus aucun Dial.
+ * On ramène l'appelant dans la conversation.
  */
 
-const { buildTransfer, buildRecord, buildSay, buildGather } = require('../lib/twiml');
-const { voiceUrl }                = require('../lib/url');
-const { getTransferNumber }       = require('../lib/transfer');
-const { updateCall }              = require('../lib/tracker');
-const { log }                     = require('../lib/logger');
-const {
-    TRANSFER_WAIT,
-    TRANSFER_FAILED,
-    CALLBACK_CONFIRM,
-    OUTRO,
-    GOODBYE,
-} = require('../config/messages');
+const { buildVoiceGather, buildSay } = require('../lib/twiml');
+const { voiceUrl } = require('../lib/url');
+const { updateCall } = require('../lib/tracker');
+const { log } = require('../lib/logger');
+const { HUMAN_STEER, CALLBACK_CONFIRM, GOODBYE } = require('../config/messages');
 
 async function human(req, res) {
-    const motif    = req.query.motif || 'autre';
-    const callSid  = req.body.CallSid;
-    const number   = getTransferNumber(motif);
-
-    log(`👤 Transfert demandé — CallSid: ${callSid}  Motif: ${motif}  Vers: ${number || '(aucun)'}`);
-
-    res.type('text/xml');
-
-    if (!number) {
-        // Pas de numéro configuré → répondeur
-        await updateCall(callSid, { status: 'callback_requested', callbackRequested: true });
-        return res.send(buildRecord({
-            say:    TRANSFER_FAILED,
-            action: voiceUrl('recorded', { motif }),
-            maxLength: 60,
-        }));
-    }
-
-    await updateCall(callSid, {
-        transferredTo: number,
-        status:        'transferred',
-    });
-
-    return res.send(buildTransfer({
-        number,
-        sayBefore:   TRANSFER_WAIT,
-        fallbackUrl: voiceUrl('fallback', { motif }),
-    }));
-}
-
-/**
- * Fallback : le conseiller n'a pas décroché.
- */
-async function fallback(req, res) {
-    const motif   = req.query.motif || 'autre';
     const callSid = req.body.CallSid;
-
-    log(`⚠️  Transfert non répondu — CallSid: ${callSid}  Motif: ${motif}`);
-
-    await updateCall(callSid, {
-        status:            'callback_requested',
-        callbackRequested: true,
-        notes:             'transfer_not_answered',
-    });
-
+    log(`🗣️  Demande conseiller — CallSid: ${callSid} — redirection conversation (pas de transfert)`);
+    if (callSid) {
+        await updateCall(callSid, { notes: 'human_steered_to_converse', status: 'in_progress' });
+    }
     res.type('text/xml');
-    res.send(buildGather({
-        say:       TRANSFER_FAILED + ' ' + CALLBACK_CONFIRM + ' ' + OUTRO,
-        action:    voiceUrl('dispatch'),
-        numDigits: 1,
-        timeout:   8,
+    res.send(buildVoiceGather({
+        say:     HUMAN_STEER,
+        action:  voiceUrl('converse'),
+        timeout: 8,
     }));
 }
 
-/**
- * Confirmation après enregistrement d'un message vocal.
- */
-async function recorded(req, res) {
-    const callSid     = req.body.CallSid;
-    const recordingUrl = req.body.RecordingUrl || null;
+async function fallback(req, res) {
+    const callSid = req.body.CallSid;
+    log(`🗣️  Fallback — CallSid: ${callSid} — conversation, pas de Dial`);
+    if (callSid) {
+        await updateCall(callSid, { notes: 'no_transfer', status: 'in_progress' });
+    }
+    res.type('text/xml');
+    res.send(buildVoiceGather({
+        say:     HUMAN_STEER,
+        action:  voiceUrl('converse'),
+        timeout: 8,
+    }));
+}
 
+async function recorded(req, res) {
+    const callSid = req.body.CallSid;
+    const recordingUrl = req.body.RecordingUrl || null;
     await updateCall(callSid, {
         status:            'callback_requested',
         callbackRequested: true,
         recordingUrl,
     });
-
     log(`🎙️  Message enregistré — CallSid: ${callSid}`);
-
     res.type('text/xml');
     res.send(buildSay(CALLBACK_CONFIRM + ' ' + GOODBYE));
 }

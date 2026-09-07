@@ -1,65 +1,54 @@
 'use strict';
 
 /**
- * Aiguillage principal — reçoit la touche du menu et route vers le bon handler.
- *
- * Digit → Motif
- *   1 → infos_pratiques  (horaires + planning)
- *   2 → inscription      (tarifs + essai + inscription)
- *   3 → competition
- *   4 → administratif
- *   5 → humain (transfert direct)
- *   * → retour menu
+ * Aiguillage de secours — touches 1-4 = questions synthétiques vers la conversation.
+ * Plus de transfert (ancienne touche 5).
  */
 
-const { buildGather, buildRedirect } = require('../lib/twiml');
+const { buildVoiceGather } = require('../lib/twiml');
 const { voiceUrl }                   = require('../lib/url');
 const { getMotifByDigit }            = require('../config/routing');
 const { updateCall }                 = require('../lib/tracker');
 const { log }                        = require('../lib/logger');
-const { MENU_REPEAT }                = require('../config/messages');
+const { ASK_DTMF_HINT }              = require('../config/messages');
+const { DTMF_ASK }                   = require('./converse');
 
 async function dispatch(req, res) {
     const digit   = req.body.Digits;
+    const speech  = (req.body.SpeechResult || '').trim();
     const callSid = req.body.CallSid;
 
-    // Retour au menu ou pas de saisie
+    res.type('text/xml');
+
+    if (speech) {
+        const { converse } = require('./converse');
+        return converse(req, res);
+    }
+
     if (!digit || digit === '*') {
-        const twiml = buildGather({
-            say:       MENU_REPEAT,
-            action:    voiceUrl('dispatch'),
-            numDigits: 1,
-            timeout:   12,
-        });
-        res.type('text/xml');
-        return res.send(twiml);
+        return res.send(buildVoiceGather({
+            say:     ASK_DTMF_HINT,
+            action:  voiceUrl('converse'),
+            timeout: 8,
+        }));
     }
 
     const motif = getMotifByDigit(digit);
+    log(`🎯 Dispatch — CallSid: ${callSid}  Touche: ${digit}  Motif: ${motif || 'converse'}`);
+    if (motif) await updateCall(callSid, { motif, rawDigits: digit });
 
-    if (!motif) {
-        const twiml = buildGather({
-            say:       MENU_REPEAT,
-            action:    voiceUrl('dispatch'),
-            numDigits: 1,
-            timeout:   12,
-        });
-        res.type('text/xml');
-        return res.send(twiml);
+    if (DTMF_ASK[digit]) {
+        req.body.SpeechResult = DTMF_ASK[digit];
+        req.body.Digits = '';
+        const { converse } = require('./converse');
+        return converse(req, res);
     }
 
-    log(`🎯 Dispatch — CallSid: ${callSid}  Touche: ${digit}  Motif: ${motif}`);
-    await updateCall(callSid, { motif, rawDigits: digit });
-
-    if (motif === 'humain') {
-        // Transfert direct sans réponse intermédiaire
-        res.type('text/xml');
-        return res.send(buildRedirect(voiceUrl('human', { motif })));
-    }
-
-    // Pour tous les autres motifs → réponse vocale + sous-menu
-    res.type('text/xml');
-    res.send(buildRedirect(voiceUrl('answer', { motif })));
+    return res.send(buildVoiceGather({
+        say:     ASK_DTMF_HINT,
+        action:  voiceUrl('converse'),
+        timeout: 8,
+    }));
 }
 
 module.exports = { dispatch };

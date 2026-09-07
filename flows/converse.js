@@ -1,0 +1,191 @@
+'use strict';
+
+/**
+ * Boucle conversationnelle — parole + touches, jamais de transfert.
+ *
+ *   /voice/converse            ← question (speech ou DTMF 1-4)
+ *   /voice/converse?phase=after ← après une réponse (nouvelle question, SMS, WA, rappel)
+ */
+
+const { buildVoiceGather, buildRedirect, buildHangup } = require('../lib/twiml');
+const { voiceUrl } = require('../lib/url');
+const { updateCall } = require('../lib/tracker');
+const { log, warn } = require('../lib/logger');
+const { chatCompletion, isAiEnabled } = require('../lib/llm');
+const { buildSystemPrompt } = require('../config/voice-prompt');
+const { classify } = require('../lib/classifier');
+const { getAnswer } = require('../config/messages');
+const session = require('../lib/session');
+const {
+    ASK_REPEAT,
+    ASK_DTMF_HINT,
+    FOLLOW_UP,
+    FOLLOW_UP_REPEAT,
+    HUMAN_STEER,
+    GOODBYE,
+} = require('../config/messages');
+
+const DTMF_ASK = {
+    1: "Quels sont les horaires d'ouverture des salles Boxing Center ?",
+    2: "Quels sont les tarifs, les offres en cours et comment s'inscrire ?",
+    3: 'Quels cours proposez-vous et dans quelles salles ?',
+    4: 'Comment résilier mon abonnement, obtenir une facture ou gérer mon contrat ?',
+    5: 'Je voudrais poser une question. Que pouvez-vous m\'expliquer sur Boxing Center ?',
+};
+
+const GOODBYE_RE = /\b(au revoir|c'?est tout|rien d'autre|non merci|terminer|raccroch|stop)\b/i;
+const SMS_RE = /\b(s\.?m\.?s|texto|par message)\b/i;
+const WA_RE = /whats\s?app/i;
+const CALLBACK_RE = /\b(rappel|rappelez|rappeler|qu'on me rappelle)\b/i;
+const HUMAN_RE = /\b(conseiller|humain|quelqu'un|op[eé]rateur|un manager|parler [aà] quelqu)\b/i;
+
+function inferMotif(text) {
+    const { motif } = classify(text || '');
+    const aliases = {
+        horaires: 'infos_pratiques',
+        planning: 'infos_pratiques',
+        tarifs: 'inscription',
+        seance_essai: 'inscription',
+        autre: 'infos_pratiques',
+    };
+    return aliases[motif] || motif || 'infos_pratiques';
+}
+
+function sanitizeSpeech(text) {
+    let t = String(text || '');
+    t = t.replace(/\[boutons:[^\]]*\]/gi, '');
+    t = t.replace(/https?:\/\/\S+/gi, '');
+    t = t.replace(/[*_`#]+/g, '');
+    t = t.replace(/\s+/g, ' ').trim();
+    if (t.length > 720) {
+        const cut = t.slice(0, 720);
+        const m = cut.match(/^[\s\S]*[.!?]/);
+        t = (m ? m[0] : cut).trim();
+    }
+    return t;
+}
+
+async function llmReply(callSid, question) {
+    if (!isAiEnabled()) return null;
+    const system = buildSystemPrompt(question);
+    const history = session.historyForLlm(callSid);
+    const messages = [
+        { role: 'system', content: system },
+        ...history,
+        { role: 'user', content: question },
+    ];
+    const { content } = await chatCompletion(messages, { maxTokens: 280, temperature: 0.35 });
+    return sanitizeSpeech(content);
+}
+
+function fallbackReply(question) {
+    return sanitizeSpeech(getAnswer(inferMotif(question)));
+}
+
+async function answerQuestion(callSid, question) {
+    session.pushTurn(callSid, 'user', question);
+    let text = null;
+    try {
+        text = await llmReply(callSid, question);
+    } catch (e) {
+        warn(`LLM converse: ${e.message}`);
+    }
+    if (!text) text = fallbackReply(question);
+    session.pushTurn(callSid, 'assistant', text);
+    session.touch(callSid, { lastMotif: inferMotif(question), lastQuestion: question });
+    await updateCall(callSid, {
+        motif: inferMotif(question),
+        notes: String(question).slice(0, 240),
+    });
+    return text;
+}
+
+function lastMotif(callSid) {
+    return session.get(callSid).lastMotif || 'infos_pratiques';
+}
+
+function gatherAfter(say) {
+    return buildVoiceGather({
+        say,
+        action: voiceUrl('converse', { phase: 'after' }),
+        timeout: 8,
+    });
+}
+
+function gatherAsk(say) {
+    return buildVoiceGather({
+        say,
+        action: voiceUrl('converse'),
+        timeout: 8,
+    });
+}
+
+async function converse(req, res) {
+    const phase = req.query.phase || 'ask';
+    const callSid = req.body.CallSid;
+    const digit = (req.body.Digits || '').trim();
+    const speech = (req.body.SpeechResult || '').trim();
+
+    res.type('text/xml');
+
+    if (phase === 'after') {
+        if (digit === '1') {
+            return res.send(buildRedirect(voiceUrl('collect/name', { motif: lastMotif(callSid) })));
+        }
+        if (digit === '2') {
+            return res.send(buildRedirect(voiceUrl('whatsapp/name', { motif: lastMotif(callSid) })));
+        }
+        if (digit === '3') {
+            return res.send(buildRedirect(voiceUrl('callback', { motif: lastMotif(callSid) })));
+        }
+        if (digit === '*' || GOODBYE_RE.test(speech)) {
+            return res.send(buildRedirect(voiceUrl('bye')));
+        }
+        if (!digit && !speech) {
+            const sess = session.addMiss(callSid);
+            if (sess.misses >= 2) return res.send(buildHangup(GOODBYE));
+            return res.send(gatherAfter(FOLLOW_UP_REPEAT));
+        }
+        if (digit === '4' || digit === '5') {
+            return res.send(gatherAsk(HUMAN_STEER));
+        }
+    }
+
+    if (digit === '*') {
+        return res.send(buildRedirect(voiceUrl('bye')));
+    }
+
+    let question = speech;
+    if (digit && DTMF_ASK[digit]) question = DTMF_ASK[digit];
+
+    if (!question) {
+        const sess = session.addMiss(callSid);
+        if (sess.misses >= 2) return res.send(gatherAsk(ASK_DTMF_HINT));
+        return res.send(gatherAsk(ASK_REPEAT));
+    }
+
+    session.resetMisses(callSid);
+
+    if (GOODBYE_RE.test(question) && question.length < 40) {
+        return res.send(buildRedirect(voiceUrl('bye')));
+    }
+    if (SMS_RE.test(question) && question.length < 50) {
+        return res.send(buildRedirect(voiceUrl('collect/name', { motif: lastMotif(callSid) })));
+    }
+    if (WA_RE.test(question) && question.length < 50) {
+        return res.send(buildRedirect(voiceUrl('whatsapp/name', { motif: lastMotif(callSid) })));
+    }
+    if (CALLBACK_RE.test(question) && question.length < 50) {
+        return res.send(buildRedirect(voiceUrl('callback', { motif: lastMotif(callSid) })));
+    }
+    if (HUMAN_RE.test(question) && question.length < 60) {
+        question = "L'appelant voulait parler à un conseiller. Réponds que tu peux l'aider maintenant et demande sa question concrète : planning, tarifs, essai, résiliation…";
+    }
+
+    log(`🗣️  Converse — CallSid: ${callSid}  Q: ${question.slice(0, 80)}`);
+
+    const answer = await answerQuestion(callSid, question);
+    return res.send(gatherAfter(`${answer} ${FOLLOW_UP}`));
+}
+
+module.exports = { converse, DTMF_ASK, sanitizeSpeech };

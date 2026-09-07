@@ -32,6 +32,7 @@ if (args.has('--report')) {
 // ─── Imports des flows ────────────────────────────────────────────────────────
 
 const { welcome }                            = require('./flows/welcome');
+const { converse }                           = require('./flows/converse');
 const { menu }                               = require('./flows/menu');
 const { dispatch }                           = require('./flows/dispatch');
 const { answer }                             = require('./flows/answer');
@@ -74,8 +75,9 @@ app.get('/audio/beep.wav', (req, res) => {
 
 // Appel entrant — URL à configurer dans Twilio Console
 app.post('/voice',               welcome);
+app.post('/voice/converse',      converse);
 
-// Navigation du menu
+// Navigation (secours DTMF / reprise)
 app.post('/voice/menu',          menu);
 app.post('/voice/dispatch',      dispatch);
 
@@ -119,6 +121,8 @@ app.get('/health', (req, res) => {
         uptimeSec:  Math.round(process.uptime()),
         totalCalls,
         dryRun:     process.env.BOT_DRY_RUN === 'true',
+        ai:         process.env.USE_AI_REPLY !== 'false',
+        transfer:   false,
         baseUrl:    process.env.BASE_URL || '(non défini)',
         phone:      process.env.TWILIO_PHONE_NUMBER || '(non défini)',
     });

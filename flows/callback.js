@@ -7,11 +7,11 @@
  * URL attendue : POST /voice/callback?motif=...
  */
 
-const { buildGather }      = require('../lib/twiml');
+const { buildVoiceGather } = require('../lib/twiml');
 const { voiceUrl }         = require('../lib/url');
 const { updateCall }       = require('../lib/tracker');
 const { log }              = require('../lib/logger');
-const { CALLBACK_CONFIRM, OUTRO } = require('../config/messages');
+const { CALLBACK_CONFIRM, FOLLOW_UP } = require('../config/messages');
 
 async function callback(req, res) {
     const motif   = req.query.motif || 'autre';
@@ -25,11 +25,10 @@ async function callback(req, res) {
         status:            'callback_requested',
     });
 
-    const twiml = buildGather({
-        say:       CALLBACK_CONFIRM + ' ' + OUTRO,
-        action:    voiceUrl('dispatch'),
-        numDigits: 1,
-        timeout:   8,
+    const twiml = buildVoiceGather({
+        say:     CALLBACK_CONFIRM + ' ' + FOLLOW_UP,
+        action:  voiceUrl('converse', { phase: 'after' }),
+        timeout: 8,
     });
 
     res.type('text/xml');
