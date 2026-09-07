@@ -64,7 +64,9 @@ module.exports = async function verify() {
     log(`   TRANSFER_ACCUEIL: ${process.env.TRANSFER_ACCUEIL || '(non défini)'}`);
     log(`   TRANSFER_ADMIN  : ${process.env.TRANSFER_ADMIN   || '(non défini)'}`);
     log(`   BOT_DRY_RUN     : ${process.env.BOT_DRY_RUN      || 'false'}`);
-    log(`   GROQ_API_KEY    : ${process.env.GROQ_API_KEY ? '(défini)' : '⚠️  manquant — textes de secours uniquement'}`);
+    log(`   AI_PROVIDER     : ${process.env.AI_PROVIDER || 'gemini'}`);
+    log(`   GEMINI_API_KEY  : ${Object.keys(process.env).some((k) => /^GEMINI_API_KEY/.test(k) && String(process.env[k] || '').startsWith('AIza')) ? '(défini)' : '⚠️  manquant — repli Groq'}`);
+    log(`   GROQ_API_KEY    : ${process.env.GROQ_API_KEY ? '(défini)' : '⚠️  manquant'}`);
     log(`   SMS             : ${process.env.TWILIO_PHONE_NUMBER || '⚠️  TWILIO_PHONE_NUMBER manquant'}`);
     log(`   Transfert humain: désactivé`);
 

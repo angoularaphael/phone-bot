@@ -1,23 +1,22 @@
 'use strict';
 
 /**
- * Après une réponse : 1 SMS · 2 rappel · * menu.
- * Aucune touche conseiller. Pas de WhatsApp.
+ * Après une réponse : parole = nouvelle question ; 1 SMS · 2 rappel · * menu.
  */
 
-const { buildRedirect, buildGather } = require('../lib/twiml');
+const { buildRedirect, buildVoiceGather } = require('../lib/twiml');
 const { voiceUrl } = require('../lib/url');
+const { speechOrDigit } = require('../lib/speech');
 const { SUB_MENU, NO_INPUT } = require('../config/messages');
 
 function sub(req, res) {
-    const digit = req.body.Digits;
-    const speech = (req.body.SpeechResult || '').trim();
+    const { digit, spoken } = speechOrDigit(req);
     const motif = req.query.motif || 'infos_pratiques';
     const gym = req.query.gym || '';
 
     res.type('text/xml');
 
-    if (speech && !digit) {
+    if (spoken) {
         const { converse } = require('./converse');
         return converse(req, res);
     }
@@ -31,11 +30,10 @@ function sub(req, res) {
         case '*':
             return res.send(buildRedirect(voiceUrl('menu')));
         default:
-            return res.send(buildGather({
-                say:       NO_INPUT + SUB_MENU,
-                action:    voiceUrl('sub', { motif, gym }),
-                numDigits: 1,
-                timeout:   10,
+            return res.send(buildVoiceGather({
+                say:     NO_INPUT + SUB_MENU,
+                action:  voiceUrl('sub', { motif, gym }),
+                timeout: 6,
             }));
     }
 }

@@ -22,7 +22,7 @@ async function welcome(req, res) {
     const twiml = buildVoiceGather({
         say:     WELCOME,
         action:  voiceUrl('dispatch'),
-        timeout: 10,
+        timeout: 6,
     });
 
     res.type('text/xml');

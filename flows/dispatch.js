@@ -1,12 +1,8 @@
 'use strict';
 
 /**
- * Aiguillage menu David (texte coach).
- *   1 → inscription / tarifs
- *   2 → sous-menu horaires / planning / disciplines
- *   3 → abonnement
- *   4 → autre
- * Parole → conversation de secours.
+ * Aiguillage menu David.
+ * Touches 1–4, ou question parlée → converse (Gemini / Groq).
  */
 
 const { buildVoiceGather, buildRedirect } = require('../lib/twiml');
@@ -14,16 +10,17 @@ const { voiceUrl }            = require('../lib/url');
 const { getMotifByDigit }     = require('../config/routing');
 const { updateCall }          = require('../lib/tracker');
 const { log }                 = require('../lib/logger');
+const { speechOrDigit }       = require('../lib/speech');
 const { MENU_REPEAT }         = require('../config/messages');
 
 async function dispatch(req, res) {
-    const digit   = req.body.Digits;
-    const speech  = (req.body.SpeechResult || '').trim();
+    const { digit, speech, spoken } = speechOrDigit(req);
     const callSid = req.body.CallSid;
 
     res.type('text/xml');
 
-    if (speech && !digit) {
+    if (spoken) {
+        log(`🗣️  Dispatch parole — CallSid: ${callSid}  « ${speech.slice(0, 80)} »`);
         const { converse } = require('./converse');
         return converse(req, res);
     }
@@ -32,7 +29,7 @@ async function dispatch(req, res) {
         return res.send(buildVoiceGather({
             say:     MENU_REPEAT,
             action:  voiceUrl('dispatch'),
-            timeout: 10,
+            timeout: 6,
         }));
     }
 
@@ -51,7 +48,7 @@ async function dispatch(req, res) {
     return res.send(buildVoiceGather({
         say:     MENU_REPEAT,
         action:  voiceUrl('dispatch'),
-        timeout: 10,
+        timeout: 6,
     }));
 }
 

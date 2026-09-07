@@ -13,12 +13,13 @@ const WELCOME =
     `Vous souhaitez vous inscrire, obtenir des informations sur nos formules et tarifs : appuyez sur la touche 1. ` +
     `Vous souhaitez obtenir des informations sur les plannings, les horaires d'ouverture, les activités et les disciplines enseignées chez Boxing Center : appuyez sur la touche 2. ` +
     `Vous souhaitez gérer votre abonnement ou obtenir des informations à son sujet : appuyez sur la touche 3. ` +
-    `Pour tout autre motif, appuyez sur la touche 4.`;
+    `Pour tout autre motif, appuyez sur la touche 4. ` +
+    `Vous pouvez aussi me poser votre question.`;
 
 const MENU = WELCOME;
 
 const MENU_REPEAT =
-    `Je n'ai pas saisi votre choix. ` + WELCOME;
+    `Je n'ai pas compris. Posez votre question, ou choisissez une touche. ` + WELCOME;
 
 const PRATIQUE_MENU =
     `Pour les horaires d'ouverture, appuyez sur 1. ` +
@@ -41,14 +42,15 @@ const SALLE_MENU_REPEAT =
     `Je n'ai pas saisi. ` + SALLE_MENU;
 
 const ASK_REPEAT =
-    `Je n'ai pas bien entendu. Appuyez sur une touche du menu.`;
+    `Je n'ai pas bien entendu. Posez votre question, ou appuyez sur une touche.`;
 
 const ASK_DTMF_HINT = MENU_REPEAT;
 
 const SUB_MENU =
     `Pour un S.M.S., appuyez sur 1. ` +
     `Un rappel, 2. ` +
-    `Retour au menu, étoile.`;
+    `Retour au menu, étoile. ` +
+    `Ou posez une autre question.`;
 
 const FOLLOW_UP = SUB_MENU;
 

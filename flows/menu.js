@@ -13,7 +13,7 @@ function menu(req, res) {
     const twiml = buildVoiceGather({
         say:     repeated ? MENU_REPEAT : WELCOME,
         action:  voiceUrl('dispatch'),
-        timeout: 10,
+        timeout: 6,
     });
     res.type('text/xml');
     res.send(twiml);

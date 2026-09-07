@@ -15,6 +15,7 @@ const { classify } = require('../lib/classifier');
 const { getAnswer } = require('../config/messages');
 const { planningReply, GYMS } = require('../config/kb');
 const session = require('../lib/session');
+const { speechOrDigit } = require('../lib/speech');
 const {
     ASK_REPEAT,
     FOLLOW_UP,
@@ -82,7 +83,8 @@ async function llmReply(callSid, question) {
         ...history,
         { role: 'user', content: question },
     ];
-    const { content } = await chatCompletion(messages, { maxTokens: 160, temperature: 0.4 });
+    const { content, provider } = await chatCompletion(messages, { maxTokens: 180, temperature: 0.3 });
+    log(`🤖 LLM ${provider || '?'} — CallSid: ${callSid}`);
     return sanitizeSpeech(content);
 }
 
@@ -144,12 +146,11 @@ function gatherAsk(say) {
 async function converse(req, res) {
     const phase = req.query.phase || 'ask';
     const callSid = req.body.CallSid;
-    const digit = (req.body.Digits || '').trim();
-    const speech = (req.body.SpeechResult || '').trim();
+    const { digit, speech, spoken } = speechOrDigit(req);
 
     res.type('text/xml');
 
-    if (phase === 'after') {
+    if (phase === 'after' && !spoken) {
         if (digit === '1') {
             return res.send(buildRedirect(voiceUrl('collect/name', { motif: lastMotif(callSid) })));
         }
@@ -172,17 +173,17 @@ async function converse(req, res) {
         }
     }
 
-    if (digit === '*') {
+    if (digit === '*' && !spoken) {
         return res.send(buildRedirect(voiceUrl('menu')));
     }
 
-    if (digit && DTMF_ASK[digit]) {
+    if (digit && DTMF_ASK[digit] && !spoken) {
         const { dispatch } = require('./dispatch');
         return dispatch(req, res);
     }
 
     let question = speech;
-    if (digit && DTMF_ASK[digit]) question = DTMF_ASK[digit];
+    if (digit && DTMF_ASK[digit] && !spoken) question = DTMF_ASK[digit];
 
     if (!question) {
         const sess = session.addMiss(callSid);

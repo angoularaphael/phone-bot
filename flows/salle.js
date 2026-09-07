@@ -7,6 +7,7 @@
 const { buildVoiceGather, buildRedirect } = require('../lib/twiml');
 const { voiceUrl } = require('../lib/url');
 const { detectGyms, SPOKEN_PLANNING } = require('../config/kb');
+const { speechOrDigit } = require('../lib/speech');
 const { SALLE_MENU, SALLE_MENU_REPEAT } = require('../config/messages');
 const { log } = require('../lib/logger');
 
@@ -19,13 +20,12 @@ const GYM_DIGIT = {
 };
 
 function salle(req, res) {
-    const digit   = (req.body.Digits || '').trim();
-    const speech  = (req.body.SpeechResult || '').trim();
+    const { digit, speech, spoken } = speechOrDigit(req);
     const callSid = req.body.CallSid;
 
     res.type('text/xml');
 
-    if (digit === '*') {
+    if (digit === '*' && !spoken) {
         return res.send(buildRedirect(voiceUrl('menu')));
     }
 
@@ -33,7 +33,7 @@ function salle(req, res) {
         return res.send(buildVoiceGather({
             say:     SALLE_MENU,
             action:  voiceUrl('salle'),
-            timeout: 10,
+            timeout: 6,
         }));
     }
 
@@ -43,11 +43,16 @@ function salle(req, res) {
         gym = ids[0] || null;
     }
 
+    if ((!gym || !SPOKEN_PLANNING[gym]) && spoken) {
+        const { converse } = require('./converse');
+        return converse(req, res);
+    }
+
     if (!gym || !SPOKEN_PLANNING[gym]) {
         return res.send(buildVoiceGather({
             say:     SALLE_MENU_REPEAT,
             action:  voiceUrl('salle'),
-            timeout: 10,
+            timeout: 6,
         }));
     }
 

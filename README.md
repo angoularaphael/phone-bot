@@ -16,8 +16,8 @@ Gère les appels via **Twilio** : **David** (voix homme **Polly.Remi-Neural**), 
 | Touche 2 | Planning, horaires, disciplines → sous-menu |
 | Touche 3 | Gérer l'abonnement / facture |
 | Touche 4 | Autre motif (question, SMS, rappel) |
-| Après une réponse | 1 SMS · 2 rappel · * menu |
-| Parole | Secours uniquement (`/voice/converse` + Groq) |
+| Après une réponse | 1 SMS · 2 rappel · * menu · ou une nouvelle question |
+| Parole | David écoute (Twilio STT) et répond (Gemini, repli Groq) |
 | Supabase | Historique d'appels |
 
 ---
@@ -34,9 +34,9 @@ Appel entrant
        │     └─ 3 Disciplines
        ├─ 3 Abonnement / facture → réponse courte
        ├─ 4 Autre motif
-       └─ Parole (secours) → converse
+       └─ Parole (question) → converse (Gemini / Groq)
             └─ Après une réponse :
-                 1 SMS · 2 rappel · * retour au menu
+                 1 SMS · 2 rappel · * menu · ou une autre question
 ```
 
 Pas de WhatsApp. Pas de touche « conseiller ». Pas de `Dial`.
@@ -94,7 +94,9 @@ node index.js --dev
 | `BASE_URL` | URL publique HTTPS |
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` | Compte Twilio (voix + SMS) |
 | `TWILIO_PHONE_NUMBER` | Numéro voix / SMS |
-| `GROQ_API_KEY` | Clé Groq (secours parole) |
+| `GROQ_API_KEY` | Repli si Gemini absent |
+| `GEMINI_API_KEY` / `GEMINI_API_KEY_1` | Clés boutique Vercel — David les utilise en premier |
+| `AI_PROVIDER` | Défaut `gemini` |
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Historique appels |
 | `LINK_GERER_ABO` | Lien SMS résiliation |
 | `BOT_VOICE` | Défaut `Polly.Remi-Neural` (homme, français). Option : `Polly.Rémi-Generative` |

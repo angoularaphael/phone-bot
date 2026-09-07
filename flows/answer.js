@@ -17,7 +17,7 @@ function answer(req, res) {
     const twiml = buildVoiceGather({
         say:     `${body} ${SUB_MENU}`,
         action:  voiceUrl('sub', { motif, gym }),
-        timeout: 10,
+        timeout: 6,
     });
     res.type('text/xml');
     res.send(twiml);
