@@ -2,7 +2,7 @@
 
 /**
  * Messages vocaux — David, Boxing Center
- * Voix : Polly.Mathieu (homme)
+ * Voix : Polly.Remi-Neural (homme, français)
  *
  * Phrases courtes. Points pour les pauses TTS.
  * 29 euros toutes les 4 semaines : jamais « par mois ».
@@ -10,15 +10,24 @@
 
 const WELCOME =
     `Boxing Center, bonjour, c'est David. ` +
-    `Pour les horaires d'ouverture, appuyez sur 1. ` +
-    `Pour les tarifs et l'essai, appuyez sur 2. ` +
-    `Pour le planning des cours, appuyez sur 3. ` +
-    `Pour une résiliation ou une facture, appuyez sur 4.`;
+    `Vous souhaitez vous inscrire, obtenir des informations sur nos formules et tarifs : appuyez sur la touche 1. ` +
+    `Vous souhaitez obtenir des informations sur les plannings, les horaires d'ouverture, les activités et les disciplines enseignées chez Boxing Center : appuyez sur la touche 2. ` +
+    `Vous souhaitez gérer votre abonnement ou obtenir des informations à son sujet : appuyez sur la touche 3. ` +
+    `Pour tout autre motif, appuyez sur la touche 4.`;
 
 const MENU = WELCOME;
 
 const MENU_REPEAT =
     `Je n'ai pas saisi votre choix. ` + WELCOME;
+
+const PRATIQUE_MENU =
+    `Pour les horaires d'ouverture, appuyez sur 1. ` +
+    `Pour le planning des cours, appuyez sur 2. ` +
+    `Pour les activités et disciplines, appuyez sur 3. ` +
+    `Retour au menu, étoile.`;
+
+const PRATIQUE_MENU_REPEAT =
+    `Je n'ai pas saisi. ` + PRATIQUE_MENU;
 
 const SALLE_MENU =
     `Quelle salle ? ` +
@@ -64,6 +73,11 @@ const ANSWERS = {
     planning:
         `Pour le planning, choisissez d'abord la salle.`,
 
+    disciplines:
+        `Boxe anglaise, pieds-poings, MMA, grappling, fitness. ` +
+        `Cours femmes et enfants, selon la salle. ` +
+        `Pour les horaires précis, prenez le planning.`,
+
     competition:
         `Les cours compétiteurs sont réservés aux confirmés. ` +
         `Pour découvrir, prenez un cours loisirs, tous niveaux.`,
@@ -72,16 +86,19 @@ const ANSWERS = {
         `Pour un sans engagement, c'est uniquement en ligne. ` +
         `Gérer mon abonnement, puis Résilier. ` +
         `Plus de 72 heures avant le prélèvement. ` +
+        `Facture et contrat : même espace en ligne. ` +
         `Je peux vous envoyer le lien par S.M.S.`,
 
     autre:
-        `Appuyez sur 1 pour les horaires, 2 pour les tarifs, 3 pour un planning, 4 pour une résiliation.`,
+        `Dites votre question. ` +
+        `Sinon je peux envoyer un lien, ou on vous rappelle.`,
 };
 
 const ANSWER_ALIASES = {
     horaires:     'infos_pratiques',
     tarifs:       'inscription',
     seance_essai: 'inscription',
+    activites:    'disciplines',
 };
 
 function getAnswer(motif) {
@@ -130,6 +147,8 @@ module.exports = {
     WELCOME,
     MENU,
     MENU_REPEAT,
+    PRATIQUE_MENU,
+    PRATIQUE_MENU_REPEAT,
     SALLE_MENU,
     SALLE_MENU_REPEAT,
     ASK_REPEAT,

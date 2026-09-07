@@ -1,11 +1,11 @@
 'use strict';
 
 /**
- * Aiguillage menu David.
- *   1 → horaires
- *   2 → tarifs / essai
- *   3 → sous-menu salles (planning)
- *   4 → résiliation
+ * Aiguillage menu David (texte coach).
+ *   1 → inscription / tarifs
+ *   2 → sous-menu horaires / planning / disciplines
+ *   3 → abonnement
+ *   4 → autre
  * Parole → conversation de secours.
  */
 
@@ -40,8 +40,8 @@ async function dispatch(req, res) {
     log(`🎯 Dispatch — CallSid: ${callSid}  Touche: ${digit}  Motif: ${motif || '?'}`);
     if (motif) await updateCall(callSid, { motif, rawDigits: digit });
 
-    if (digit === '3' || motif === 'planning') {
-        return res.send(buildRedirect(voiceUrl('salle')));
+    if (digit === '2' || motif === 'planning') {
+        return res.send(buildRedirect(voiceUrl('pratique')));
     }
 
     if (motif) {

@@ -36,6 +36,7 @@ const { converse }                           = require('./flows/converse');
 const { menu }                               = require('./flows/menu');
 const { dispatch }                           = require('./flows/dispatch');
 const { salle }                              = require('./flows/salle');
+const { pratique }                           = require('./flows/pratique');
 const { answer }                             = require('./flows/answer');
 const { sub }                                = require('./flows/sub');
 const { collectName, collectPhone, collectSave }          = require('./flows/collect');
@@ -81,6 +82,7 @@ app.post('/voice/converse',      converse);
 // Navigation (secours DTMF / reprise)
 app.post('/voice/menu',          menu);
 app.post('/voice/dispatch',      dispatch);
+app.post('/voice/pratique',      pratique);
 app.post('/voice/salle',         salle);
 
 // Réponse vocale par motif + sous-menu

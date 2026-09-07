@@ -23,11 +23,10 @@ const {
 } = require('../config/messages');
 
 const DTMF_ASK = {
-    1: "Quels sont les horaires d'ouverture des salles Boxing Center ?",
-    2: "Quels sont les tarifs, les offres en cours et comment s'inscrire ?",
-    3: 'Quels cours proposez-vous et dans quelles salles ?',
-    4: 'Comment résilier mon abonnement, obtenir une facture ou gérer mon contrat ?',
-    5: 'Je voudrais poser une question. Que pouvez-vous m\'expliquer sur Boxing Center ?',
+    1: "Quels sont les tarifs, les offres en cours et comment s'inscrire ?",
+    2: "Quels sont les horaires, le planning des cours et les disciplines ?",
+    3: 'Comment gérer mon abonnement, résilier ou obtenir une facture ?',
+    4: "J'ai une autre question sur Boxing Center.",
 };
 
 const GOODBYE_RE = /\b(au revoir|c'?est tout|rien d'autre|non merci|terminer|raccroch|stop)\b/i;
@@ -181,7 +180,7 @@ async function converse(req, res) {
         return res.send(buildRedirect(voiceUrl('menu')));
     }
 
-    if (digit && DTMF_ASK[digit] && digit !== '5') {
+    if (digit && DTMF_ASK[digit]) {
         const { dispatch } = require('./dispatch');
         return dispatch(req, res);
     }

@@ -1,7 +1,7 @@
 # Boxing Center — Phone Bot
 
 Bot téléphonique de la ligne principale Boxing Center (09 39 03 67 48).
-Gère les appels via **Twilio** : **David** (voix homme Polly Mathieu), menu à touches, SMS / WhatsApp, demande de rappel.
+Gère les appels via **Twilio** : **David** (voix homme **Polly.Remi-Neural**), menu à touches, SMS / WhatsApp, demande de rappel.
 
 **Aucun transfert vers un humain.** Le bot lit des réponses courtes (horaires, tarifs, planning par salle, résiliation).
 
@@ -11,11 +11,11 @@ Gère les appels via **Twilio** : **David** (voix homme Polly Mathieu), menu à 
 
 | Feature | Détail |
 |---|---|
-| Accueil | David + menu 4 touches |
-| Touche 1 | Horaires d'ouverture |
-| Touche 2 | Tarifs (29 € / 4 semaines) et essai |
-| Touche 3 | Planning → sous-menu 5 salles |
-| Touche 4 | Résiliation / facture |
+| Accueil | David + menu 4 touches (texte coach) |
+| Touche 1 | Inscription, formules et tarifs (29 € / 4 semaines) |
+| Touche 2 | Planning, horaires, disciplines → sous-menu |
+| Touche 3 | Gérer l'abonnement / facture |
+| Touche 4 | Autre motif (question, SMS, WhatsApp, rappel) |
 | Après une réponse | 1 SMS · 2 WhatsApp · 3 rappel · * menu |
 | Parole | Secours uniquement (`/voice/converse` + Groq) |
 | Supabase | Historique d'appels |
@@ -26,11 +26,14 @@ Gère les appels via **Twilio** : **David** (voix homme Polly Mathieu), menu à 
 
 ```
 Appel entrant
-  └─ « Boxing Center, bonjour, c'est David. » + menu 1–4
-       ├─ 1 Horaires → réponse courte
-       ├─ 2 Tarifs / essai → réponse courte
-       ├─ 3 Planning → 1 Minimes · 2 Portet · 3 Ramonville · 4 Saint-Cyprien · 5 États-Unis
-       ├─ 4 Résiliation / facture → réponse courte
+  └─ « Boxing Center, bonjour, c'est David. » + menu coach 1–4
+       ├─ 1 Inscription / tarifs → réponse courte
+       ├─ 2 Planning, horaires, disciplines
+       │     ├─ 1 Horaires
+       │     ├─ 2 Planning → 1 Minimes · 2 Portet · 3 Ramonville · 4 Saint-Cyprien · 5 États-Unis
+       │     └─ 3 Disciplines
+       ├─ 3 Abonnement / facture → réponse courte
+       ├─ 4 Autre motif
        └─ Parole (secours) → converse
             └─ Après une réponse :
                  1 SMS · 2 WhatsApp · 3 rappel · * retour au menu
@@ -93,7 +96,7 @@ node index.js --dev
 | `GROQ_API_KEY` | Clé Groq (secours parole) |
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Historique appels |
 | `LINK_GERER_ABO` | Lien SMS résiliation |
-| `BOT_VOICE` | Défaut `Polly.Mathieu` (homme, français) |
+| `BOT_VOICE` | Défaut `Polly.Remi-Neural` (homme, français). Option : `Polly.Rémi-Generative` |
 | `BOT_DRY_RUN` | `true` = pas de SMS réel |
 | `USE_AI_REPLY` | `false` = pas de LLM même en secours parole |
 
@@ -113,14 +116,15 @@ phone-bot/
 │   └── routing.js        ← touches 1–4
 ├── flows/
 │   ├── welcome.js        ← menu DTMF
-│   ├── dispatch.js       ← 1–4 ; 3 → salles
+│   ├── dispatch.js       ← 1 tarifs · 2 pratique · 3 abo · 4 autre
+│   ├── pratique.js       ← horaires / planning / disciplines
 │   ├── salle.js          ← sous-menu 5 salles
 │   ├── answer.js         ← texte figé + sous-menu
 │   ├── sub.js            ← SMS / WhatsApp / rappel / *
 │   ├── converse.js       ← secours si l'appelant parle
 │   └── …
 ├── lib/
-│   ├── twiml.js          ← Polly.Mathieu + pauses SSML
+│   ├── twiml.js          ← Polly.Remi-Neural + pauses SSML
 │   ├── llm.js
 │   └── transfer.js       ← toujours null
 ```

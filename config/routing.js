@@ -1,41 +1,58 @@
 'use strict';
 
 /**
- * Menu David — 4 touches, pas de transfert.
- *   1 horaires  2 tarifs/essai  3 planning  4 administratif
+ * Menu David — 4 touches coach, pas de transfert.
+ *   1 inscription / tarifs
+ *   2 planning, horaires, disciplines
+ *   3 abonnement
+ *   4 autre motif
  */
 
 function routes() {
     const site = process.env.BOXING_WEBSITE || 'https://boxingcenter.fr';
     const boutique = process.env.LINK_BOUTIQUE || 'https://boutique.boxingcenter.fr';
     return {
-        infos_pratiques: {
-            digit:    '1',
-            label:    'Horaires d\'ouverture',
-            transfer: null,
-            smsLink:  process.env.LINK_HORAIRES || site,
-            priority: 'normal',
-        },
         inscription: {
-            digit:    '2',
-            label:    'Tarifs, essai et inscription',
+            digit:    '1',
+            label:    'Inscription, formules et tarifs',
             transfer: null,
             smsLink:  process.env.LINK_ESSAI || boutique,
             priority: 'normal',
         },
         planning: {
-            digit:    '3',
-            label:    'Planning des cours',
+            digit:    '2',
+            label:    'Planning, horaires, disciplines',
             transfer: null,
             smsLink:  process.env.LINK_PLANNING || site,
             priority: 'normal',
         },
         administratif: {
-            digit:    '4',
-            label:    'Résiliation / Facture',
+            digit:    '3',
+            label:    'Gérer l\'abonnement',
             transfer: null,
             smsLink:  process.env.LINK_GERER_ABO || `${boutique.replace(/\/$/, '')}/gerer-abonnement`,
             priority: 'urgent',
+        },
+        autre: {
+            digit:    '4',
+            label:    'Autre motif',
+            transfer: null,
+            smsLink:  site,
+            priority: 'normal',
+        },
+        infos_pratiques: {
+            digit:    null,
+            label:    'Horaires d\'ouverture',
+            transfer: null,
+            smsLink:  process.env.LINK_HORAIRES || site,
+            priority: 'normal',
+        },
+        disciplines: {
+            digit:    null,
+            label:    'Activités et disciplines',
+            transfer: null,
+            smsLink:  process.env.LINK_PLANNING || site,
+            priority: 'normal',
         },
         competition: {
             digit:    null,
@@ -58,13 +75,13 @@ const ROUTE_ALIASES = {
     horaires:     'infos_pratiques',
     tarifs:       'inscription',
     seance_essai: 'inscription',
-    humain:       'infos_pratiques',
-    autre:        'infos_pratiques',
+    activites:    'disciplines',
+    humain:       'autre',
 };
 
 function getRoute(motif) {
     const key = ROUTE_ALIASES[motif] || motif;
-    return routes()[key] || routes().infos_pratiques;
+    return routes()[key] || routes().inscription;
 }
 
 module.exports = { routes, getMotifByDigit, getRoute, ROUTE_ALIASES };
