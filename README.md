@@ -87,12 +87,55 @@ node index.js --dev
 
 ---
 
+## WhatsApp via Twilio
+
+La touche **2** du sous-menu envoie un WhatsApp par l’API Twilio (plus Baileys, plus la passerelle SMS).
+
+### 1. Sender WhatsApp
+
+Dans [Twilio Console → Messaging → Senders → WhatsApp senders](https://console.twilio.com/us1/develop/sms/senders/whatsapp-senders) :
+
+- **Test** : sandbox `+14155238886`. Chaque destinataire doit d’abord envoyer `join <code>` au sandbox. Inutile pour un appelant inconnu.
+- **Prod** : demander un sender WhatsApp Business (souvent le même compte Meta que la boutique, ou un numéro Twilio dédié). Ce n’est **pas** automatique sur le numéro voix `+33939036748`.
+
+Mettre le numéro obtenu dans `TWILIO_WHATSAPP_NUMBER` (format `+33…`).
+
+### 2. Modèle (obligatoire hors sandbox)
+
+Un WhatsApp demandé au téléphone est un message **initié par le club**. Meta refuse le texte libre tant que la personne n’a pas écrit sur WhatsApp. Il faut un **Content Template** approuvé :
+
+1. Twilio Console → Content Template Builder → créer un modèle *Utility*, langue `fr`.
+2. Corps type : `Bonjour {{1}}, voici les infos Boxing Center : {{2}}`
+3. Faire approuver par Meta, puis copier le SID `HX…` dans `TWILIO_WHATSAPP_CONTENT_SID`.
+
+Le bot envoie `{{1}}` = prénom, `{{2}}` = lien (boutique / Gérer mon abo / site).
+
+Sans `TWILIO_WHATSAPP_CONTENT_SID`, le bot envoie le texte libre : ça marche en sandbox (après `join`), pas en prod vers un inconnu.
+
+### 3. Variables bot-hosting
+
+```
+WHATSAPP_PROVIDER=twilio
+TWILIO_WHATSAPP_NUMBER=+33XXXXXXXXX
+TWILIO_WHATSAPP_CONTENT_SID=HXxxxxxxxx
+```
+
+Redémarrer le container, puis `node index.js --verify`.
+
+La touche **1** (SMS) reste un SMS Twilio / gateway, inchangée.
+
+---
+
 ## Variables d'environnement
 
 | Variable | Description |
 |---|---|
 | `BASE_URL` | URL publique HTTPS |
-| `TWILIO_*` | Compte et numéro Twilio |
+| `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` | Compte Twilio (voix + WhatsApp) |
+| `TWILIO_PHONE_NUMBER` | Numéro voix / SMS |
+| `TWILIO_WHATSAPP_NUMBER` | Sender WhatsApp (Console Twilio → Messaging → WhatsApp senders) |
+| `TWILIO_WHATSAPP_CONTENT_SID` | Modèle Content Template (`HX…`), recommandé en production |
+| `WHATSAPP_PROVIDER` | `twilio` (défaut). Ne plus utiliser `baileys` / `gateway` |
 | `GROQ_API_KEY` | Clé Groq (secours parole) |
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Historique appels |
 | `LINK_GERER_ABO` | Lien SMS résiliation |

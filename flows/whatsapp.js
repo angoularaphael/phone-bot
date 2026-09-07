@@ -83,7 +83,7 @@ async function whatsappSave(req, res) {
     let waError = null;
 
     if (toPhone) {
-        const result = await sendWhatsApp({ to: toPhone, body });
+        const result = await sendWhatsApp({ to: toPhone, body, name, link });
         waSent  = result.ok;
         waError = result.error || null;
     } else {
