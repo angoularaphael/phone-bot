@@ -14,7 +14,8 @@ const { chatCompletion, isAiEnabled } = require('../lib/llm');
 const { buildSystemPrompt } = require('../config/voice-prompt');
 const { classify, isCancelIntent } = require('../lib/classifier');
 const { getAnswer, ASK_REPEAT, SMS_ALREADY_SENT, getFollowUp, GOODBYE, THINKING } = require('../config/messages');
-const { planningReply, GYMS, spokenQuickReply, correctStt } = require('../config/kb');
+const { planningReply, GYMS, correctStt, nearbyGymId, detectGyms } = require('../config/kb');
+const { wantsKids } = require('../config/knowledge-file');
 const session = require('../lib/session');
 const { speechOrDigit } = require('../lib/speech');
 
@@ -102,21 +103,18 @@ function fallbackReply(question) {
 async function answerQuestion(callSid, question) {
     const sess = session.get(callSid);
     const cancel = isCancelIntent(question);
-    const quick = cancel
-        ? { gym: null, text: null }
-        : spokenQuickReply(question, sess.lastGym, sess.lastQuestion);
+    const gymHint = nearbyGymId(question) || detectGyms(question)[0] || sess.lastGym || null;
     const planned = cancel
         ? { gym: null, text: null }
-        : (quick.text ? quick : planningReply(question, sess.lastGym, sess.lastQuestion));
-    if (planned.gym) session.touch(callSid, { lastGym: planned.gym });
+        : planningReply(question, gymHint, sess.lastQuestion);
+    const gym = planned.gym || gymHint || sess.lastGym || null;
+    if (gym) session.touch(callSid, { lastGym: gym });
 
     session.pushTurn(callSid, 'user', question);
 
     let text = null;
     if (cancel) {
         text = getAnswer('administratif');
-    } else if (quick.text) {
-        text = quick.text;
     } else {
         try {
             text = await llmReply(callSid, question);
@@ -130,12 +128,12 @@ async function answerQuestion(callSid, question) {
     text = sanitizeSpeech(text);
     const motif = cancel
         ? 'administratif'
-        : (quick.motif || inferMotif(question));
+        : (wantsKids(question) ? 'inscription' : inferMotif(question));
     session.pushTurn(callSid, 'assistant', text);
     session.touch(callSid, {
         lastMotif: motif,
         lastQuestion: question,
-        lastGym: planned.gym || sess.lastGym || null,
+        lastGym: gym || sess.lastGym || null,
     });
     await updateCall(callSid, {
         motif,
@@ -212,11 +210,8 @@ function clearThinkingJob(callSid) {
     if (callSid) thinkingJobs.delete(callSid);
 }
 
-function needsHoldMusic(question, callSid) {
-    if (!isAiEnabled() || isCancelIntent(question)) return false;
-    const sess = session.get(callSid);
-    const quick = spokenQuickReply(question, sess.lastGym, sess.lastQuestion);
-    return !quick.text;
+function needsHoldMusic(question) {
+    return isAiEnabled() && !isCancelIntent(question);
 }
 
 async function converse(req, res) {
@@ -309,7 +304,7 @@ async function converse(req, res) {
 
     log(`🗣️  Converse — CallSid: ${callSid}  Q: ${question.slice(0, 80)}`);
 
-    if (!needsHoldMusic(question, callSid)) {
+    if (!needsHoldMusic(question)) {
         const answer = await answerQuestion(callSid, question);
         return res.send(gatherAfter(`${answer} ${followUpSay(callSid)}`));
     }
