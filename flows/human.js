@@ -9,7 +9,7 @@ const { buildVoiceGather, buildSay } = require('../lib/twiml');
 const { voiceUrl } = require('../lib/url');
 const { updateCall } = require('../lib/tracker');
 const { log } = require('../lib/logger');
-const { HUMAN_STEER, CALLBACK_CONFIRM, GOODBYE } = require('../config/messages');
+const { HUMAN_STEER, GOODBYE } = require('../config/messages');
 
 async function human(req, res) {
     const callSid = req.body.CallSid;
@@ -43,13 +43,12 @@ async function recorded(req, res) {
     const callSid = req.body.CallSid;
     const recordingUrl = req.body.RecordingUrl || null;
     await updateCall(callSid, {
-        status:            'callback_requested',
-        callbackRequested: true,
+        status:            'completed',
         recordingUrl,
     });
     log(`🎙️  Message enregistré — CallSid: ${callSid}`);
     res.type('text/xml');
-    res.send(buildSay(CALLBACK_CONFIRM + ' ' + GOODBYE));
+    res.send(buildSay(GOODBYE));
 }
 
 module.exports = { human, fallback, recorded };

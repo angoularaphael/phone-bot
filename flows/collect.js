@@ -17,7 +17,7 @@
 
 const { buildSpeechGather, buildGather, buildVoiceGather, buildRedirect } = require('../lib/twiml');
 const { voiceUrl }    = require('../lib/url');
-const { sendSms, buildSmsBody } = require('../lib/sms');
+const { sendSms, buildSmsBody, extractFirstName } = require('../lib/sms');
 const { updateCall }  = require('../lib/tracker');
 const { getRoute }    = require('../config/routing');
 const { log, warn }   = require('../lib/logger');
@@ -60,13 +60,27 @@ function collectName(req, res) {
 
 function collectPhone(req, res) {
     const motif  = req.query.motif || 'autre';
-    const name   = (req.body.SpeechResult || '').trim().split(' ')[0]; // premier mot = prénom
+    const callSid = req.body.CallSid;
+    const name   = extractFirstName(req.body.SpeechResult || '');
     const caller = req.body.From || '';
+
+    if (name) session.touch(callSid, { callerName: name });
+
+    if (!name && req.query.retry !== '1') {
+        const twiml = buildSpeechGather({
+            say:    COLLECT_NAME_FALLBACK,
+            action: voiceUrl('collect/phone', { motif, retry: '1' }),
+            timeout: 5,
+        });
+        return res.type('text/xml').send(twiml);
+    }
+
+    const savedName = name || session.get(callSid).callerName || '';
 
     // Si le numéro From ressemble à un mobile (commence par +336, +337, 06, 07),
     // on saute la collecte du numéro et on envoie directement.
     if (isMobile(caller)) {
-        const params = new URLSearchParams({ motif, name: name || '', phone: caller });
+        const params = new URLSearchParams({ motif, name: savedName, phone: caller });
         return res.type('text/xml').send(
             buildRedirect(`${voiceUrl('collect/save')}?${params}`)
         );
@@ -75,7 +89,7 @@ function collectPhone(req, res) {
     // Sinon, demande le numéro
     const twiml = buildGather({
         say:       COLLECT_PHONE,
-        action:    voiceUrl('collect/save', { motif, name: name || '' }),
+        action:    voiceUrl('collect/save', { motif, name: savedName }),
         numDigits: 10,
         timeout:   15,
     });
@@ -88,8 +102,9 @@ function collectPhone(req, res) {
 
 async function collectSave(req, res) {
     const motif    = req.query.motif   || 'autre';
-    const name     = (req.query.name   || '').trim();
     const callSid  = req.body.CallSid;
+    const sess     = session.get(callSid);
+    const name     = (sess.callerName || req.query.name || '').trim();
     const caller   = req.body.From     || '';
 
     if (session.get(callSid).smsSent) {
@@ -107,7 +122,11 @@ async function collectSave(req, res) {
     const route = getRoute(motif);
     const link  = route.smsLink || '';
 
-    const body = buildSmsBody(motif, name || null, link);
+    const body = buildSmsBody(motif, name || null, link, {
+        gym: sess.lastGym || req.query.gym || null,
+        lastQuestion: sess.lastQuestion || '',
+        messages: sess.messages || [],
+    });
 
     let smsSent = false;
     let smsError = null;
@@ -130,7 +149,7 @@ async function collectSave(req, res) {
 
     log(`📋 Collecte — CallSid: ${callSid}  Prénom: ${name || '(vide)'}  Tel: ${toPhone || '?'}  SMS: ${smsSent}`);
 
-    if (smsSent) session.touch(callSid, { smsSent: true });
+    if (smsSent) session.touch(callSid, { smsSent: true, callerName: name || sess.callerName || null });
 
     const confirmText = smsSent
         ? `${SMS_CONFIRM(name)} ${getFollowUp({ motif, smsSent: true })}`

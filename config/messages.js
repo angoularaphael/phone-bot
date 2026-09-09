@@ -48,7 +48,6 @@ const ASK_DTMF_HINT = MENU_REPEAT;
 
 const SUB_MENU =
     `Si vous voulez recevoir un S.M.S. avec les informations et les liens utiles, appuyez sur la touche 1. ` +
-    `Si vous préférez que l'on vous rappelle, appuyez sur la touche 2. ` +
     `Pour revenir au menu principal, appuyez sur étoile. ` +
     `Vous pouvez aussi me poser une autre question.`;
 
@@ -67,12 +66,6 @@ const FOLLOW_UP_REPEAT = SUB_MENU;
 
 function isInscriptionMotif(motif) {
     return motif === 'inscription' || motif === 'tarifs' || motif === 'seance_essai';
-}
-
-function offersCallback({ motif, smsSent } = {}) {
-    if (smsSent) return false;
-    if (isInscriptionMotif(motif)) return false;
-    return true;
 }
 
 function getFollowUp({ motif, smsSent } = {}) {
@@ -181,7 +174,6 @@ module.exports = {
     FOLLOW_UP_REPEAT,
     FOLLOW_UP_AFTER_SMS,
     getFollowUp,
-    offersCallback,
     isInscriptionMotif,
     HUMAN_STEER,
     SUB_MENU,

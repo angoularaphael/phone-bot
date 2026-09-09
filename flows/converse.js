@@ -12,7 +12,7 @@ const { log, warn } = require('../lib/logger');
 const { chatCompletion, isAiEnabled } = require('../lib/llm');
 const { buildSystemPrompt } = require('../config/voice-prompt');
 const { classify } = require('../lib/classifier');
-const { getAnswer, ASK_REPEAT, SMS_ALREADY_SENT, getFollowUp, offersCallback, GOODBYE } = require('../config/messages');
+const { getAnswer, ASK_REPEAT, SMS_ALREADY_SENT, getFollowUp, GOODBYE } = require('../config/messages');
 const { planningReply, GYMS } = require('../config/kb');
 const session = require('../lib/session');
 const { speechOrDigit } = require('../lib/speech');
@@ -26,7 +26,6 @@ const DTMF_ASK = {
 
 const GOODBYE_RE = /\b(au revoir|c'?est tout|rien d'autre|non merci|terminer|raccroch|stop)\b/i;
 const SMS_RE = /\b(s\.?m\.?s|texto|par message|whats\s?app)\b/i;
-const CALLBACK_RE = /\b(rappel|rappelez|rappeler|qu'on me rappelle)\b/i;
 const HUMAN_RE = /\b(conseiller|humain|quelqu'un|op[eé]rateur|un manager|parler [aà] quelqu)\b/i;
 
 function inferMotif(text) {
@@ -52,8 +51,8 @@ function sanitizeSpeech(text) {
     }
     if (t && !/[.!?…]$/.test(t)) t += '.';
     const words = t.split(/\s+/);
-    if (words.length > 58) {
-        const cut = words.slice(0, 58).join(' ');
+    if (words.length > 90) {
+        const cut = words.slice(0, 90).join(' ');
         const m = cut.match(/^[\s\S]*[.!?]/);
         t = (m && m[0].length > 40 ? m[0] : `${cut}.`).trim();
     }
@@ -63,21 +62,30 @@ function sanitizeSpeech(text) {
 function contextBlob(callSid, question) {
     const sess = session.get(callSid);
     const gymLabel = sess.lastGym && GYMS[sess.lastGym] ? GYMS[sess.lastGym].fullLabel : '';
-    return [sess.lastQuestion, gymLabel ? `Salle déjà choisie : ${gymLabel}` : '', question]
+    const lastAsst = [...(sess.messages || [])].reverse().find((m) => m.role === 'assistant');
+    return [
+        sess.lastQuestion ? `Question précédente : ${sess.lastQuestion}` : '',
+        lastAsst ? `Dernière réponse déjà donnée : ${String(lastAsst.content).slice(0, 280)}` : '',
+        gymLabel ? `Salle déjà retenue : ${gymLabel}` : '',
+        `Question actuelle : ${question}`,
+    ]
         .filter(Boolean)
-        .join('. ');
+        .join('\n');
 }
 
 async function llmReply(callSid, question) {
     if (!isAiEnabled()) return null;
     const system = buildSystemPrompt(contextBlob(callSid, question));
     const history = session.historyForLlm(callSid);
+    const prior = history.length && history[history.length - 1].role === 'user'
+        ? history.slice(0, -1)
+        : history;
     const messages = [
         { role: 'system', content: system },
-        ...history,
+        ...prior,
         { role: 'user', content: question },
     ];
-    const { content, provider } = await chatCompletion(messages, { maxTokens: 180, temperature: 0.3 });
+    const { content, provider } = await chatCompletion(messages, { maxTokens: 260, temperature: 0.25 });
     log(`🤖 LLM ${provider || '?'} — CallSid: ${callSid}`);
     return sanitizeSpeech(content);
 }
@@ -93,14 +101,13 @@ async function answerQuestion(callSid, question) {
 
     session.pushTurn(callSid, 'user', question);
 
-    let text = planned.text || null;
-    if (!text) {
-        try {
-            text = await llmReply(callSid, question);
-        } catch (e) {
-            warn(`LLM converse: ${e.message}`);
-        }
+    let text = null;
+    try {
+        text = await llmReply(callSid, question);
+    } catch (e) {
+        warn(`LLM converse: ${e.message}`);
     }
+    if (!text && planned.text) text = planned.text;
     if (!text) text = fallbackReply(question);
 
     text = sanitizeSpeech(text);
@@ -159,12 +166,6 @@ async function converse(req, res) {
             }
             return res.send(buildRedirect(voiceUrl('collect/name', { motif: lastMotif(callSid) })));
         }
-        if (digit === '2' || digit === '3') {
-            if (offersCallback({ motif: lastMotif(callSid), smsSent: smsAlreadySent(callSid) })) {
-                return res.send(buildRedirect(voiceUrl('callback', { motif: lastMotif(callSid) })));
-            }
-            return res.send(gatherAfter(followUpSay(callSid)));
-        }
         if (digit === '*') {
             return res.send(buildRedirect(voiceUrl('menu')));
         }
@@ -178,6 +179,9 @@ async function converse(req, res) {
         }
         if (digit === '4' || digit === '5') {
             return res.send(buildRedirect(voiceUrl('menu')));
+        }
+        if (digit) {
+            return res.send(gatherAfter(followUpSay(callSid)));
         }
     }
 
@@ -209,12 +213,6 @@ async function converse(req, res) {
             return res.send(gatherAfter(`${SMS_ALREADY_SENT} ${followUpSay(callSid)}`));
         }
         return res.send(buildRedirect(voiceUrl('collect/name', { motif: lastMotif(callSid) })));
-    }
-    if (CALLBACK_RE.test(question) && question.length < 50) {
-        if (offersCallback({ motif: lastMotif(callSid), smsSent: smsAlreadySent(callSid) })) {
-            return res.send(buildRedirect(voiceUrl('callback', { motif: lastMotif(callSid) })));
-        }
-        return res.send(gatherAfter(followUpSay(callSid)));
     }
     if (HUMAN_RE.test(question) && question.length < 60) {
         question = "L'appelant voulait parler à un conseiller. Réponds que tu peux l'aider maintenant et demande sa question concrète : planning, tarifs, essai, résiliation…";

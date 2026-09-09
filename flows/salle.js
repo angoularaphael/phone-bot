@@ -10,6 +10,7 @@ const { detectGyms, SPOKEN_PLANNING } = require('../config/kb');
 const { speechOrDigit } = require('../lib/speech');
 const { SALLE_MENU, SALLE_MENU_REPEAT } = require('../config/messages');
 const { log } = require('../lib/logger');
+const session = require('../lib/session');
 
 const GYM_DIGIT = {
     1: 'minimes',
@@ -57,6 +58,7 @@ function salle(req, res) {
     }
 
     log(`📍 Salle — CallSid: ${callSid}  ${gym}`);
+    session.touch(callSid, { lastGym: gym, lastMotif: 'planning' });
     return res.send(buildRedirect(voiceUrl('answer', { motif: 'planning', gym })));
 }
 

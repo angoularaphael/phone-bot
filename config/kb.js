@@ -474,14 +474,16 @@ const SPOKEN_PLANNING = {
 };
 
 function planningReply(text, lastGym, lastQuestion) {
-  const merged = `${lastQuestion || ''} ${text || ''} ${lastGym || ''}`;
   const gyms = detectGyms(`${text || ''} ${lastGym || ''} ${lastQuestion || ''}`);
   const gym = gyms[0] || lastGym || null;
+  const current = foldSpeech(text || '');
   const wordCount = String(text || '').trim().split(/\s+/).filter(Boolean).length;
   const shortGymAnswer = detectGyms(text || '').length > 0 && wordCount <= 6;
-  const wantsPlanning = PLANNING_INTENT.test(foldSpeech(merged))
-    || /planning|horaire|cours|creneau/i.test(lastQuestion || '');
-  if (gym && SPOKEN_PLANNING[gym] && (wantsPlanning || shortGymAnswer)) {
+  const enrollNow = /inscri|abonn|enfant|ado|mineur|fils|fille|gamin/i.test(current);
+  if (enrollNow) return { gym, text: null };
+  const wantsPlanning = PLANNING_INTENT.test(current)
+    || (shortGymAnswer && /planning|horaire|cours|creneau/i.test(lastQuestion || ''));
+  if (gym && SPOKEN_PLANNING[gym] && (wantsPlanning || shortGymAnswer) && !enrollNow) {
     return { gym, text: SPOKEN_PLANNING[gym] };
   }
   return { gym, text: null };
