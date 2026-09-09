@@ -108,6 +108,23 @@ node index.js --dev
 
 ---
 
+## Interne — entraînement (99)
+
+Pas annoncé au menu. Pendant l'accueil (ou plus tard) : **9** puis **9**.
+
+1. Touche **1** : poser la question (après le bip)
+2. Touche **2** : enregistrer la réponse
+3. Un SMS part sur le mobile qui appelle :
+
+```
+Q : …
+R : …
+```
+
+Étoile pour revenir au menu. Copie optionnelle : `TRAIN_SMS_TO` dans le `.env`.
+
+---
+
 ## Structure
 
 ```

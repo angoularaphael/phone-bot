@@ -295,6 +295,10 @@ async function converse(req, res) {
         if (digit === '*') {
             return res.send(buildRedirect(voiceUrl('menu')));
         }
+        if (!spoken) {
+            const { tryOpenTrain } = require('./train');
+            if (tryOpenTrain(digit, res)) return;
+        }
         if (GOODBYE_RE.test(speech)) {
             return res.send(buildRedirect(voiceUrl('bye')));
         }
@@ -313,6 +317,11 @@ async function converse(req, res) {
 
     if (digit === '*' && !spoken) {
         return res.send(buildRedirect(voiceUrl('menu')));
+    }
+
+    if (!spoken) {
+        const { tryOpenTrain } = require('./train');
+        if (tryOpenTrain(digit, res)) return;
     }
 
     if (digit && DTMF_ASK[digit] && !spoken) {

@@ -39,12 +39,15 @@ function sub(req, res) {
             return res.send(buildRedirect(voiceUrl('collect/name', { motif })));
         case '*':
             return res.send(buildRedirect(voiceUrl('menu')));
-        default:
+        default: {
+            const { tryOpenTrain } = require('./train');
+            if (tryOpenTrain(digit, res)) return;
             return res.send(buildVoiceGather({
                 say:     NO_INPUT + followUp,
                 action:  voiceUrl('sub', { motif, gym }),
                 timeout: 6,
             }));
+        }
     }
 }
 

@@ -30,6 +30,11 @@ function salle(req, res) {
         return res.send(buildRedirect(voiceUrl('menu')));
     }
 
+    if (!spoken) {
+        const { tryOpenTrain } = require('./train');
+        if (tryOpenTrain(digit, res)) return;
+    }
+
     if (!digit && !speech) {
         return res.send(buildVoiceGather({
             say:     SALLE_MENU,

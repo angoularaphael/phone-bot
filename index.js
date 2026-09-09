@@ -45,6 +45,7 @@ const { callback }                           = require('./flows/callback');
 const { human, fallback, recorded }          = require('./flows/human');
 const { bye }                                = require('./flows/bye');
 const { statusCallback }                     = require('./flows/status');
+const { trainGate, trainHub, trainCapture, sendAndConfirm } = require('./flows/train');
 
 // ─── Application Express ──────────────────────────────────────────────────────
 
@@ -98,6 +99,11 @@ app.post('/voice/human',         human);
 app.post('/voice/fallback',      fallback);
 app.post('/voice/recorded',      recorded);
 app.post('/voice/bye',           bye);
+
+app.post('/voice/train/gate',    trainGate);
+app.post('/voice/train/hub',     trainHub);
+app.post('/voice/train/capture',  trainCapture);
+app.post('/voice/train/send',   sendAndConfirm);
 
 // Callback de statut Twilio (durée, fin d'appel)
 app.post('/voice/status',        statusCallback);

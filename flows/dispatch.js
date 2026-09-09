@@ -25,6 +25,9 @@ async function dispatch(req, res) {
         return converse(req, res);
     }
 
+    const { tryOpenTrain } = require('./train');
+    if (tryOpenTrain(digit, res)) return;
+
     if (!digit || digit === '*') {
         return res.send(buildVoiceGather({
             say:     MENU_REPEAT,

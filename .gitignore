@@ -2,3 +2,4 @@ node_modules/
 .env
 env.bothosting
 *.log
+data/train-qa.jsonl

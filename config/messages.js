@@ -190,6 +190,35 @@ const OUTRO = SUB_MENU;
 const NO_INPUT =
     `Je n'ai pas reçu de touche. `;
 
+const TRAIN_HUB =
+    `Mode interne. Pour poser une question, appuyez sur 1. ` +
+    `Pour enregistrer la réponse, appuyez sur 2. ` +
+    `Pour quitter, appuyez sur étoile.`;
+
+const TRAIN_ASK_Q =
+    `Posez la question après le signal.`;
+
+const TRAIN_ASK_R =
+    `Donnez la réponse après le signal.`;
+
+const TRAIN_NEED_Q =
+    `Enregistrez d'abord la question. Appuyez sur 1.`;
+
+const TRAIN_Q_OK =
+    `Question notée. Appuyez sur 2 pour la réponse.`;
+
+const TRAIN_SMS_OK =
+    `Le S.M.S. est parti. Pour une autre paire, appuyez sur 1. Étoile pour le menu.`;
+
+const TRAIN_SMS_FAIL =
+    `Le S.M.S. n'est pas parti. Appuyez sur 2 pour réessayer, ou étoile pour quitter.`;
+
+const TRAIN_MISS =
+    `Je n'ai pas entendu. `;
+
+const TRAIN_PHONE =
+    `Tapez les 10 chiffres du mobile qui doit recevoir le S.M.S.`;
+
 module.exports = {
     WELCOME,
     INTRO,
@@ -230,4 +259,13 @@ module.exports = {
     GOODBYE,
     OUTRO,
     NO_INPUT,
+    TRAIN_HUB,
+    TRAIN_ASK_Q,
+    TRAIN_ASK_R,
+    TRAIN_NEED_Q,
+    TRAIN_Q_OK,
+    TRAIN_SMS_OK,
+    TRAIN_SMS_FAIL,
+    TRAIN_MISS,
+    TRAIN_PHONE,
 };
