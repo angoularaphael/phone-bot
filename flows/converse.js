@@ -15,7 +15,7 @@ const { buildSystemPrompt } = require('../config/voice-prompt');
 const { classify, isCancelIntent } = require('../lib/classifier');
 const { getAnswer, ASK_REPEAT, SMS_ALREADY_SENT, getFollowUp, GOODBYE, THINKING } = require('../config/messages');
 const { planningReply, GYMS, correctStt, nearbyGymId, detectGyms } = require('../config/kb');
-const { wantsKids } = require('../config/knowledge-file');
+const { wantsKids, fallbackFromKnowledge } = require('../config/knowledge-file');
 const session = require('../lib/session');
 const { speechOrDigit } = require('../lib/speech');
 
@@ -91,12 +91,14 @@ async function llmReply(callSid, question) {
         ...prior,
         { role: 'user', content: question },
     ];
-    const { content, provider } = await chatCompletion(messages, { maxTokens: 260, temperature: 0.25 });
+    const { content, provider } = await chatCompletion(messages, { maxTokens: 400, temperature: 0.25 });
     log(`🤖 LLM ${provider || '?'} — CallSid: ${callSid}`);
     return sanitizeSpeech(content);
 }
 
 function fallbackReply(question) {
+    const fromKb = fallbackFromKnowledge(question);
+    if (fromKb) return sanitizeSpeech(fromKb);
     return sanitizeSpeech(getAnswer(inferMotif(question)));
 }
 
