@@ -27,6 +27,9 @@ async function statusCallback(req, res) {
         });
         if (status === 'completed' || status === 'busy' || status === 'failed' || status === 'no-answer' || status === 'canceled') {
             drop(callSid);
+            try {
+                require('./converse').clearThinkingJob(callSid);
+            } catch (_) { /* ignore */ }
         }
     }
 

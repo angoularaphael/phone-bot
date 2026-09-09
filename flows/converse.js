@@ -3,16 +3,17 @@
 /**
  * Secours si l'appelant parle au lieu d'appuyer.
  * Le chemin principal est le menu DTMF (welcome → dispatch).
+ * Pendant la réflexion de l'IA : musique d'attente, puis la réponse.
  */
 
-const { buildVoiceGather, buildRedirect, buildHangup } = require('../lib/twiml');
+const { buildVoiceGather, buildRedirect, buildHangup, buildPlayThenRedirect, holdMusicUrl } = require('../lib/twiml');
 const { voiceUrl } = require('../lib/url');
 const { updateCall } = require('../lib/tracker');
 const { log, warn } = require('../lib/logger');
 const { chatCompletion, isAiEnabled } = require('../lib/llm');
 const { buildSystemPrompt } = require('../config/voice-prompt');
-const { classify } = require('../lib/classifier');
-const { getAnswer, ASK_REPEAT, SMS_ALREADY_SENT, getFollowUp, GOODBYE } = require('../config/messages');
+const { classify, isCancelIntent } = require('../lib/classifier');
+const { getAnswer, ASK_REPEAT, SMS_ALREADY_SENT, getFollowUp, GOODBYE, THINKING } = require('../config/messages');
 const { planningReply, GYMS } = require('../config/kb');
 const session = require('../lib/session');
 const { speechOrDigit } = require('../lib/speech');
@@ -28,7 +29,11 @@ const GOODBYE_RE = /\b(au revoir|c'?est tout|rien d'autre|non merci|terminer|rac
 const SMS_RE = /\b(s\.?m\.?s|texto|par message|whats\s?app)\b/i;
 const HUMAN_RE = /\b(conseiller|humain|quelqu'un|op[eé]rateur|un manager|parler [aà] quelqu)\b/i;
 
+const MAX_THINK_LOOPS = 12;
+const thinkingJobs = new Map();
+
 function inferMotif(text) {
+    if (isCancelIntent(text)) return 'administratif';
     const { motif } = classify(text || '');
     const aliases = {
         horaires:     'infos_pratiques',
@@ -96,29 +101,36 @@ function fallbackReply(question) {
 
 async function answerQuestion(callSid, question) {
     const sess = session.get(callSid);
-    const planned = planningReply(question, sess.lastGym, sess.lastQuestion);
+    const cancel = isCancelIntent(question);
+    const planned = cancel
+        ? { gym: null, text: null }
+        : planningReply(question, sess.lastGym, sess.lastQuestion);
     if (planned.gym) session.touch(callSid, { lastGym: planned.gym });
 
     session.pushTurn(callSid, 'user', question);
 
     let text = null;
-    try {
-        text = await llmReply(callSid, question);
-    } catch (e) {
-        warn(`LLM converse: ${e.message}`);
+    if (cancel) {
+        text = getAnswer('administratif');
+    } else {
+        try {
+            text = await llmReply(callSid, question);
+        } catch (e) {
+            warn(`LLM converse: ${e.message}`);
+        }
+        if (!text && planned.text) text = planned.text;
+        if (!text) text = fallbackReply(question);
     }
-    if (!text && planned.text) text = planned.text;
-    if (!text) text = fallbackReply(question);
 
     text = sanitizeSpeech(text);
     session.pushTurn(callSid, 'assistant', text);
     session.touch(callSid, {
-        lastMotif: inferMotif(question),
+        lastMotif: cancel ? 'administratif' : inferMotif(question),
         lastQuestion: question,
         lastGym: planned.gym || sess.lastGym || null,
     });
     await updateCall(callSid, {
-        motif: inferMotif(question),
+        motif: cancel ? 'administratif' : inferMotif(question),
         notes: String(question).slice(0, 240),
     });
     return text;
@@ -152,12 +164,74 @@ function gatherAsk(say) {
     });
 }
 
+function holdThenThink(first) {
+    return buildPlayThenRedirect({
+        say: first ? THINKING : null,
+        play: holdMusicUrl(),
+        action: voiceUrl('converse', { phase: 'think' }),
+        pause: 2,
+    });
+}
+
+function startThinking(callSid, question) {
+    const existing = thinkingJobs.get(callSid);
+    if (existing && existing.question === question && !existing.done) return existing;
+    const job = {
+        question,
+        done: false,
+        result: null,
+        error: null,
+        loops: 0,
+    };
+    thinkingJobs.set(callSid, job);
+    job.promise = answerQuestion(callSid, question)
+        .then((text) => {
+            job.result = text;
+            job.done = true;
+            return text;
+        })
+        .catch((e) => {
+            warn(`Think job: ${e.message}`);
+            job.error = e;
+            job.result = fallbackReply(question);
+            job.done = true;
+            return job.result;
+        });
+    return job;
+}
+
+function clearThinkingJob(callSid) {
+    if (callSid) thinkingJobs.delete(callSid);
+}
+
+function needsHoldMusic(question) {
+    return isAiEnabled() && !isCancelIntent(question);
+}
+
 async function converse(req, res) {
     const phase = req.query.phase || 'ask';
     const callSid = req.body.CallSid;
     const { digit, speech, spoken } = speechOrDigit(req);
 
     res.type('text/xml');
+
+    if (phase === 'think') {
+        const job = thinkingJobs.get(callSid);
+        if (!job) {
+            return res.send(gatherAsk(ASK_REPEAT));
+        }
+        if (!job.done) {
+            job.loops += 1;
+            if (job.loops >= MAX_THINK_LOOPS) {
+                job.done = true;
+                job.result = job.result || fallbackReply(job.question);
+            } else {
+                return res.send(holdThenThink(false));
+            }
+        }
+        thinkingJobs.delete(callSid);
+        return res.send(gatherAfter(`${job.result} ${followUpSay(callSid)}`));
+    }
 
     if (phase === 'after' && !spoken) {
         if (digit === '1') {
@@ -220,8 +294,13 @@ async function converse(req, res) {
 
     log(`🗣️  Converse — CallSid: ${callSid}  Q: ${question.slice(0, 80)}`);
 
-    const answer = await answerQuestion(callSid, question);
-    return res.send(gatherAfter(`${answer} ${followUpSay(callSid)}`));
+    if (!needsHoldMusic(question)) {
+        const answer = await answerQuestion(callSid, question);
+        return res.send(gatherAfter(`${answer} ${followUpSay(callSid)}`));
+    }
+
+    startThinking(callSid, question);
+    return res.send(holdThenThink(true));
 }
 
-module.exports = { converse, DTMF_ASK, sanitizeSpeech };
+module.exports = { converse, DTMF_ASK, sanitizeSpeech, clearThinkingJob };

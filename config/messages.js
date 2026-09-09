@@ -61,6 +61,14 @@ const SUB_MENU_INSCRIPTION =
     `Pour revenir au menu principal, appuyez sur étoile. ` +
     `Vous pouvez aussi me poser une autre question.`;
 
+const SUB_MENU_RESIL =
+    `Si vous voulez recevoir un S.M.S. avec le lien pour résilier ou gérer votre abonnement, appuyez sur la touche 1. ` +
+    `Pour revenir au menu principal, appuyez sur étoile. ` +
+    `Vous pouvez aussi me poser une autre question.`;
+
+const THINKING =
+    `Un instant, je vérifie.`;
+
 const FOLLOW_UP_AFTER_SMS =
     `Vous pouvez me poser une autre question. ` +
     `Pour revenir au menu principal, appuyez sur étoile.`;
@@ -75,6 +83,7 @@ function isInscriptionMotif(motif) {
 
 function getFollowUp({ motif, smsSent } = {}) {
     if (smsSent) return FOLLOW_UP_AFTER_SMS;
+    if (motif === 'administratif') return SUB_MENU_RESIL;
     if (isInscriptionMotif(motif)) return SUB_MENU_INSCRIPTION;
     return SUB_MENU;
 }
@@ -134,8 +143,22 @@ const COLLECT_NAME =
     `Très bien. Je vais vous envoyer un S.M.S. avec les informations. ` +
     `Dites votre prénom après le signal, pour que le message soit à votre nom.`;
 
+const COLLECT_NAME_INSCRIPTION =
+    `Très bien. Je vais vous envoyer un S.M.S. avec les liens pour vous inscrire. ` +
+    `Dites votre prénom après le signal, pour que le message soit à votre nom.`;
+
+const COLLECT_NAME_RESIL =
+    `Très bien. Je vais vous envoyer un S.M.S. avec le lien pour résilier ou gérer votre abonnement. ` +
+    `Dites votre prénom après le signal, pour que le message soit à votre nom.`;
+
 const COLLECT_NAME_FALLBACK =
     `Je n'ai pas bien entendu. Dites seulement votre prénom après le signal.`;
+
+function getCollectName(motif) {
+    if (motif === 'administratif') return COLLECT_NAME_RESIL;
+    if (isInscriptionMotif(motif)) return COLLECT_NAME_INSCRIPTION;
+    return COLLECT_NAME;
+}
 
 const COLLECT_PHONE =
     `Sur quel numéro souhaitez-vous recevoir le S.M.S. ? Tapez les 10 chiffres de votre téléphone.`;
@@ -185,10 +208,15 @@ module.exports = {
     HUMAN_STEER,
     SUB_MENU,
     SUB_MENU_INSCRIPTION,
+    SUB_MENU_RESIL,
+    THINKING,
     ANSWERS,
     getAnswer,
     ANSWER_ALIASES,
     COLLECT_NAME,
+    COLLECT_NAME_INSCRIPTION,
+    COLLECT_NAME_RESIL,
+    getCollectName,
     COLLECT_NAME_FALLBACK,
     COLLECT_PHONE,
     SMS_CONFIRM,

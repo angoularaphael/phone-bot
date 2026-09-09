@@ -67,7 +67,7 @@ if (args.has('--dev') || process.env.DEBUG === 'true') {
     });
 }
 
-// ─── Fichiers audio (musique d'accueil + bip) ────────────────────────────────
+// ─── Fichiers audio (accueil, attente, bip) ─────────────────────────────────
 
 app.use('/audio', express.static(path.join(__dirname, 'assets')));
 

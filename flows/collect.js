@@ -23,7 +23,7 @@ const { getRoute }    = require('../config/routing');
 const { log, warn }   = require('../lib/logger');
 const session = require('../lib/session');
 const {
-    COLLECT_NAME,
+    getCollectName,
     COLLECT_NAME_FALLBACK,
     COLLECT_PHONE,
     SMS_CONFIRM,
@@ -35,8 +35,9 @@ const {
 // ─── Étape 1 : Prénom ────────────────────────────────────────────────────────
 
 function collectName(req, res) {
-    const motif = req.query.motif || 'autre';
     const callSid = req.body.CallSid;
+    const sess = session.get(callSid);
+    const motif = resolveSmsMotif(sess.lastMotif || req.query.motif || 'autre', sess);
 
     if (session.get(callSid).smsSent) {
         return res.type('text/xml').send(buildVoiceGather({
@@ -47,7 +48,7 @@ function collectName(req, res) {
     }
 
     const twiml = buildSpeechGather({
-        say:    COLLECT_NAME,
+        say:    getCollectName(motif),
         action: voiceUrl('collect/phone', { motif }),
         timeout: 5,
     });
