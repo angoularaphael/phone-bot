@@ -14,7 +14,7 @@ const { chatCompletion, isAiEnabled } = require('../lib/llm');
 const { buildSystemPrompt } = require('../config/voice-prompt');
 const { classify, isCancelIntent } = require('../lib/classifier');
 const { getAnswer, ASK_REPEAT, SMS_ALREADY_SENT, getFollowUp, GOODBYE, THINKING } = require('../config/messages');
-const { planningReply, GYMS } = require('../config/kb');
+const { planningReply, GYMS, spokenQuickReply, correctStt } = require('../config/kb');
 const session = require('../lib/session');
 const { speechOrDigit } = require('../lib/speech');
 
@@ -29,7 +29,7 @@ const GOODBYE_RE = /\b(au revoir|c'?est tout|rien d'autre|non merci|terminer|rac
 const SMS_RE = /\b(s\.?m\.?s|texto|par message|whats\s?app)\b/i;
 const HUMAN_RE = /\b(conseiller|humain|quelqu'un|op[eé]rateur|un manager|parler [aà] quelqu)\b/i;
 
-const MAX_THINK_LOOPS = 12;
+const MAX_THINK_LOOPS = 3;
 const thinkingJobs = new Map();
 
 function inferMotif(text) {
@@ -102,9 +102,12 @@ function fallbackReply(question) {
 async function answerQuestion(callSid, question) {
     const sess = session.get(callSid);
     const cancel = isCancelIntent(question);
+    const quick = cancel
+        ? { gym: null, text: null }
+        : spokenQuickReply(question, sess.lastGym, sess.lastQuestion);
     const planned = cancel
         ? { gym: null, text: null }
-        : planningReply(question, sess.lastGym, sess.lastQuestion);
+        : (quick.text ? quick : planningReply(question, sess.lastGym, sess.lastQuestion));
     if (planned.gym) session.touch(callSid, { lastGym: planned.gym });
 
     session.pushTurn(callSid, 'user', question);
@@ -112,6 +115,8 @@ async function answerQuestion(callSid, question) {
     let text = null;
     if (cancel) {
         text = getAnswer('administratif');
+    } else if (quick.text) {
+        text = quick.text;
     } else {
         try {
             text = await llmReply(callSid, question);
@@ -123,14 +128,17 @@ async function answerQuestion(callSid, question) {
     }
 
     text = sanitizeSpeech(text);
+    const motif = cancel
+        ? 'administratif'
+        : (quick.motif || inferMotif(question));
     session.pushTurn(callSid, 'assistant', text);
     session.touch(callSid, {
-        lastMotif: cancel ? 'administratif' : inferMotif(question),
+        lastMotif: motif,
         lastQuestion: question,
         lastGym: planned.gym || sess.lastGym || null,
     });
     await updateCall(callSid, {
-        motif: cancel ? 'administratif' : inferMotif(question),
+        motif,
         notes: String(question).slice(0, 240),
     });
     return text;
@@ -204,16 +212,23 @@ function clearThinkingJob(callSid) {
     if (callSid) thinkingJobs.delete(callSid);
 }
 
-function needsHoldMusic(question) {
-    return isAiEnabled() && !isCancelIntent(question);
+function needsHoldMusic(question, callSid) {
+    if (!isAiEnabled() || isCancelIntent(question)) return false;
+    const sess = session.get(callSid);
+    const quick = spokenQuickReply(question, sess.lastGym, sess.lastQuestion);
+    return !quick.text;
 }
 
 async function converse(req, res) {
-    const phase = req.query.phase || 'ask';
+    let phase = req.query.phase || 'ask';
     const callSid = req.body.CallSid;
     const { digit, speech, spoken } = speechOrDigit(req);
 
     res.type('text/xml');
+
+    if (!req.query.phase && !speech && !digit && thinkingJobs.has(callSid)) {
+        phase = 'think';
+    }
 
     if (phase === 'think') {
         const job = thinkingJobs.get(callSid);
@@ -268,7 +283,7 @@ async function converse(req, res) {
         return dispatch(req, res);
     }
 
-    let question = speech;
+    let question = speech ? correctStt(speech) : speech;
     if (digit && DTMF_ASK[digit] && !spoken) question = DTMF_ASK[digit];
 
     if (!question) {
@@ -294,7 +309,7 @@ async function converse(req, res) {
 
     log(`🗣️  Converse — CallSid: ${callSid}  Q: ${question.slice(0, 80)}`);
 
-    if (!needsHoldMusic(question)) {
+    if (!needsHoldMusic(question, callSid)) {
         const answer = await answerQuestion(callSid, question);
         return res.send(gatherAfter(`${answer} ${followUpSay(callSid)}`));
     }

@@ -38,7 +38,7 @@ const GYMS = {
     address: '11 rue Sainte-Lucie, 31300 Toulouse',
     manager: 'Dadi',
     url: 'https://boxingcenter.fr/salle-de-sport-toulouse/boxing-center-salle-de-toulouse-saint-cyprien/',
-    match: /st[-\s.]?cyprien|saint[-\s.]?cyprien|\bcyprien\b|\bsiprien\b|\bciprien\b|sainte[-\s]?lucie|fer\s+[àa]\s+cheval/i,
+    match: /st[-\s.]?cyprien|saint[-\s.]?cyprien|\bcyprien\b|\bsiprien\b|\bciprien\b|sainte[-\s]?lucie|fer\s+[àa]\s+cheval|reynerie|mirail|bellefontaine|bagatelle/i,
   },
   portet: {
     label: 'Portet',
@@ -454,6 +454,89 @@ function foldSpeech(text) {
     .replace(/\bminime\b(?!s)/g, 'minimes');
 }
 
+/**
+ * Twilio déforme souvent « boxe » → « bourse », « 7 ans » → « Victor Hugo ».
+ */
+function correctStt(text) {
+  let t = String(text || '');
+  t = t.replace(/\b(la )?bourse\b/gi, 'la boxe');
+  t = t.replace(/\bbourse\b/gi, 'boxe');
+  t = t.replace(/\b(fils|fille) de victor hugo\b/gi, '$1 de 7 ans');
+  t = t.replace(/\bvictor hugo\b/gi, '7 ans');
+  return t;
+}
+
+function isKidsIntent(text) {
+  const t = foldSpeech(correctStt(text));
+  return /fils|fille|enfant|gamin|ado|mineur|[ée]ducative|baby\s*boxe|\b7\s*ans\b|\b11\s*ans\b/.test(t);
+}
+
+function nearbyGymId(text) {
+  const t = foldSpeech(text);
+  const areas = [
+    { gym: 'st-cyprien', test: /reynerie|mirail|bellefontaine|bagatelle|papus|patte.?d.?oie|fer\s+a\s+cheval|arenes|croix\s+de\s+pierre/ },
+    { gym: 'etats-unis', test: /lalande|borderouge|trois\s+cocus/ },
+    { gym: 'minimes', test: /barriere|bonnevay|fenouillet/ },
+    { gym: 'ramonville', test: /castanet|labege|auzeville/ },
+    { gym: 'portet', test: /roques|cugnaux|frouzins|muret/ },
+  ];
+  const hit = areas.find((a) => a.test.test(t));
+  return hit ? hit.gym : null;
+}
+
+const KIDS_SPOKEN = {
+  minimes:
+    'À Minimes, pour un enfant de 7 à 11 ans, c\'est la boxe éducative mercredi et samedi, de 15 heures à 16 heures, avec Mehdi. L\'inscription se fait en ligne.',
+  ramonville:
+    'À Ramonville, pour un enfant de 7 à 11 ans, c\'est la boxe éducative mercredi et samedi, de 15 heures à 16 heures, avec Valentin Guth. L\'inscription se fait en ligne.',
+  'st-cyprien':
+    'À Saint-Cyprien, 11 rue Sainte-Lucie, près du Fer à Cheval. Pour un enfant de 7 à 11 ans, boxe éducative mercredi et samedi, de 15 heures à 16 heures, avec Dadi. L\'inscription se fait en ligne.',
+  portet:
+    'À Portet, pour un enfant de 7 à 11 ans, c\'est la boxe éducative mercredi et samedi, de 16 heures à 17 heures, avec Mourad. L\'inscription se fait en ligne.',
+  'etats-unis':
+    'Aux États-Unis, pour un enfant de 7 à 11 ans, c\'est la boxe pieds-poings mercredi et samedi, de 15 heures à 16 heures, avec Renaud. L\'inscription se fait en ligne.',
+};
+
+const KIDS_ASK_SALLE =
+  'Pour un enfant de 7 à 11 ans, c\'est la boxe éducative, mercredi et samedi après-midi. Quelle salle vous arrange ? Minimes, Portet, Ramonville, Saint-Cyprien ou États-Unis ?';
+
+const NEARBY_SPOKEN = {
+  'st-cyprien':
+    'La salle la plus proche, c\'est Saint-Cyprien, 11 rue Sainte-Lucie, près du Fer à Cheval. Ouvert du lundi au samedi, de 10 heures à 21 heures 30.',
+  minimes:
+    'La salle la plus proche, c\'est Minimes, 12 rue de Fenouillet, Barrière de Paris.',
+  ramonville:
+    'La salle la plus proche, c\'est Ramonville, 33 rue des Ormes.',
+  portet:
+    'La salle la plus proche, c\'est Portet-sur-Garonne, 61 route d\'Espagne.',
+  'etats-unis':
+    'La salle la plus proche, c\'est États-Unis, 388 avenue des États-Unis.',
+};
+
+/**
+ * Réponse immédiate (sans IA) : enfant, quartier, planning.
+ */
+function spokenQuickReply(text, lastGym, lastQuestion) {
+  const corrected = correctStt(text || '');
+  const blob = `${corrected} ${lastQuestion || ''}`;
+  const areaGym = nearbyGymId(corrected);
+  const gyms = detectGyms(`${corrected} ${lastQuestion || ''}`);
+  const gym = areaGym || gyms[0] || lastGym || null;
+  const kids = isKidsIntent(corrected) || isKidsIntent(blob);
+  const wantsPlace = /salle|loin|pr[eè]s|proche|quartier|pas loin|a cote|c[oô]t[eé]/i.test(foldSpeech(corrected));
+
+  if (kids && gym && KIDS_SPOKEN[gym]) {
+    return { gym, text: KIDS_SPOKEN[gym], motif: 'inscription' };
+  }
+  if (kids && !gym) {
+    return { gym: null, text: KIDS_ASK_SALLE, motif: 'inscription' };
+  }
+  if (areaGym && wantsPlace && NEARBY_SPOKEN[areaGym]) {
+    return { gym: areaGym, text: NEARBY_SPOKEN[areaGym], motif: 'infos_pratiques' };
+  }
+  return planningReply(corrected, lastGym, lastQuestion);
+}
+
 function detectGyms(text) {
   const t = foldSpeech(text);
   return Object.keys(GYMS).filter((id) => GYMS[id].match.test(t));
@@ -677,6 +760,10 @@ module.exports = {
   GYM_INDEX,
   SPOKEN_PLANNING,
   foldSpeech,
+  correctStt,
+  isKidsIntent,
+  nearbyGymId,
+  spokenQuickReply,
   detectGyms,
   planningContext,
   planningReply,
