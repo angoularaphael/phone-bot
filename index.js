@@ -13,6 +13,7 @@
 require('dotenv').config();
 
 const express = require('express');
+const path = require('path');
 const { log, warn, err } = require('./lib/logger');
 
 // ─── Flags CLI ────────────────────────────────────────────────────────────────
@@ -66,11 +67,9 @@ if (args.has('--dev') || process.env.DEBUG === 'true') {
     });
 }
 
-// ─── Fichiers audio (bip du signal sonore) ────────────────────────────────────
+// ─── Fichiers audio (musique d'accueil + bip) ────────────────────────────────
 
-app.get('/audio/beep.wav', (req, res) => {
-    res.sendFile(require('path').join(__dirname, 'assets', 'beep.wav'));
-});
+app.use('/audio', express.static(path.join(__dirname, 'assets')));
 
 // ─── Routes vocales (webhooks Twilio) ─────────────────────────────────────────
 

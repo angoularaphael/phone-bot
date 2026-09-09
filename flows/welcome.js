@@ -4,7 +4,7 @@
  * Accueil David — menu 4 touches.
  */
 
-const { buildVoiceGather } = require('../lib/twiml');
+const { buildVoiceGather, introMusicUrl } = require('../lib/twiml');
 const { saveCall }         = require('../lib/tracker');
 const { voiceUrl }         = require('../lib/url');
 const { log }              = require('../lib/logger');
@@ -22,7 +22,8 @@ async function welcome(req, res) {
     const twiml = buildVoiceGather({
         say:     WELCOME,
         action:  voiceUrl('dispatch'),
-        timeout: 6,
+        timeout: 8,
+        play:    introMusicUrl(),
     });
 
     res.type('text/xml');

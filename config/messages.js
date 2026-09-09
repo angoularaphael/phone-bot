@@ -8,18 +8,23 @@
  * 29 euros toutes les 4 semaines : jamais « par mois ».
  */
 
-const WELCOME =
-    `Boxing Center, bonjour, c'est David. ` +
-    `Vous souhaitez vous inscrire, obtenir des informations sur nos formules et tarifs : appuyez sur la touche 1. ` +
-    `Vous souhaitez obtenir des informations sur les plannings, les horaires d'ouverture, les activités et les disciplines enseignées chez Boxing Center : appuyez sur la touche 2. ` +
-    `Vous souhaitez gérer votre abonnement ou obtenir des informations à son sujet : appuyez sur la touche 3. ` +
+const INTRO =
+    `Bonjour. Je suis David, de Boxing Center. ` +
+    `C'est moi qui vais vous éclairer sur vos besoins durant cet appel.`;
+
+const MENU_CHOICES =
+    `Vous souhaitez vous inscrire, ou obtenir des informations sur nos formules et tarifs : appuyez sur la touche 1. ` +
+    `Vous souhaitez des informations sur les plannings, les horaires d'ouverture, les activités et les disciplines : appuyez sur la touche 2. ` +
+    `Vous souhaitez gérer votre abonnement : appuyez sur la touche 3. ` +
     `Pour tout autre motif, appuyez sur la touche 4. ` +
     `Vous pouvez aussi me poser votre question.`;
 
-const MENU = WELCOME;
+const WELCOME = `${INTRO} ${MENU_CHOICES}`;
+
+const MENU = MENU_CHOICES;
 
 const MENU_REPEAT =
-    `Je n'ai pas compris. Posez votre question, ou choisissez une touche. ` + WELCOME;
+    `Je n'ai pas compris. ` + MENU_CHOICES;
 
 const PRATIQUE_MENU =
     `Pour les horaires d'ouverture, appuyez sur 1. ` +
@@ -75,7 +80,7 @@ function getFollowUp({ motif, smsSent } = {}) {
 }
 
 const HUMAN_STEER =
-    `Je peux vous répondre. ` + WELCOME;
+    `Je peux vous répondre. ` + MENU_CHOICES;
 
 const ANSWERS = {
     infos_pratiques:
@@ -162,6 +167,8 @@ const NO_INPUT =
 
 module.exports = {
     WELCOME,
+    INTRO,
+    MENU_CHOICES,
     MENU,
     MENU_REPEAT,
     PRATIQUE_MENU,
