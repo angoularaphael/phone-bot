@@ -100,6 +100,7 @@ node index.js --dev
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Historique appels |
 | `LINK_GERER_ABO` | Lien SMS résiliation |
 | `BOT_VOICE` | Défaut `Polly.Remi-Neural` (homme, français). Option : `Polly.Rémi-Generative` |
+| `BOT_SPEECH_RATE` | Débit David. Défaut `120%` (un peu plus vite). `100%` = normal, `130%` = encore plus rapide |
 | `BOT_DRY_RUN` | `true` = pas de SMS réel |
 | `USE_AI_REPLY` | `false` = pas de LLM même en secours parole |
 

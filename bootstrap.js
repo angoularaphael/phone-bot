@@ -95,7 +95,7 @@ if (fs.existsSync(ROOT_ENV_PATH)) {
         'LINK_INSCRIPTION', 'LINK_PLANNING', 'LINK_COMPETITION', 'LINK_GERER_ABO', 'LINK_BOUTIQUE',
         'SMS_GATEWAY_URL', 'SMS_GATEWAY_SECRET',
         'USE_AI_REPLY',
-        'BOT_DRY_RUN', 'DEBUG', 'BOT_VOICE', 'BOT_LANGUAGE',
+        'BOT_DRY_RUN', 'DEBUG', 'BOT_VOICE', 'BOT_LANGUAGE', 'BOT_SPEECH_RATE',
     ];
     const lines = ['# Auto-généré par bootstrap.js'];
     for (const k of ENV_KEYS) {
