@@ -81,7 +81,7 @@ const ROUTE_ALIASES = {
 
 function getRoute(motif) {
     const key = ROUTE_ALIASES[motif] || motif;
-    return routes()[key] || routes().inscription;
+    return routes()[key] || routes().autre;
 }
 
 module.exports = { routes, getMotifByDigit, getRoute, ROUTE_ALIASES };

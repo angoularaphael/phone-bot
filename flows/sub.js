@@ -8,13 +8,15 @@ const { buildRedirect, buildVoiceGather } = require('../lib/twiml');
 const { voiceUrl } = require('../lib/url');
 const { speechOrDigit } = require('../lib/speech');
 const { getFollowUp, NO_INPUT, SMS_ALREADY_SENT } = require('../config/messages');
+const { resolveSmsMotif } = require('../lib/sms');
 const session = require('../lib/session');
 
 function sub(req, res) {
     const { digit, spoken } = speechOrDigit(req);
-    const motif = req.query.motif || 'infos_pratiques';
     const gym = req.query.gym || '';
     const callSid = req.body.CallSid;
+    const sess = session.get(callSid);
+    const motif = resolveSmsMotif(sess.lastMotif || req.query.motif || 'autre', sess);
     const smsSent = !!session.get(callSid).smsSent;
     const followUp = getFollowUp({ motif, smsSent });
 

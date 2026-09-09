@@ -31,13 +31,13 @@ const HUMAN_RE = /\b(conseiller|humain|quelqu'un|op[eé]rateur|un manager|parler
 function inferMotif(text) {
     const { motif } = classify(text || '');
     const aliases = {
-        horaires: 'infos_pratiques',
-        planning: 'infos_pratiques',
-        tarifs: 'inscription',
+        horaires:     'infos_pratiques',
+        planning:     'planning',
+        tarifs:       'inscription',
         seance_essai: 'inscription',
-        autre: 'infos_pratiques',
+        autre:        'autre',
     };
-    return aliases[motif] || motif || 'infos_pratiques';
+    return aliases[motif] || motif || 'autre';
 }
 
 function sanitizeSpeech(text) {
@@ -125,7 +125,7 @@ async function answerQuestion(callSid, question) {
 }
 
 function lastMotif(callSid) {
-    return session.get(callSid).lastMotif || 'infos_pratiques';
+    return session.get(callSid).lastMotif || 'autre';
 }
 
 function smsAlreadySent(callSid) {

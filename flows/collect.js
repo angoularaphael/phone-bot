@@ -17,7 +17,7 @@
 
 const { buildSpeechGather, buildGather, buildVoiceGather, buildRedirect } = require('../lib/twiml');
 const { voiceUrl }    = require('../lib/url');
-const { sendSms, buildSmsBody, extractFirstName } = require('../lib/sms');
+const { sendSms, buildSmsBody, extractFirstName, resolveSmsMotif } = require('../lib/sms');
 const { updateCall }  = require('../lib/tracker');
 const { getRoute }    = require('../config/routing');
 const { log, warn }   = require('../lib/logger');
@@ -101,11 +101,11 @@ function collectPhone(req, res) {
 // ─── Étape 3 : Envoi SMS + confirmation ──────────────────────────────────────
 
 async function collectSave(req, res) {
-    const motif    = req.query.motif   || 'autre';
     const callSid  = req.body.CallSid;
     const sess     = session.get(callSid);
     const name     = (sess.callerName || req.query.name || '').trim();
     const caller   = req.body.From     || '';
+    const motif    = resolveSmsMotif(sess.lastMotif || req.query.motif || 'autre', sess);
 
     if (session.get(callSid).smsSent) {
         return res.type('text/xml').send(buildVoiceGather({
