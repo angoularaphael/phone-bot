@@ -29,7 +29,7 @@ const GOODBYE_RE = /\b(au revoir|c'?est tout|rien d'autre|non merci|terminer|rac
 const SMS_RE = /\b(s\.?m\.?s|texto|par message|whats\s?app)\b/i;
 const HUMAN_RE = /\b(conseiller|humain|quelqu'un|op[eé]rateur|un manager|parler [aà] quelqu)\b/i;
 
-const MAX_THINK_LOOPS = 3;
+const MAX_THINK_LOOPS = 12;
 const thinkingJobs = new Map();
 
 function inferMotif(text) {
