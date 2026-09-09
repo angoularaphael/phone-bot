@@ -12,7 +12,7 @@ const { log, warn } = require('../lib/logger');
 const { chatCompletion, isAiEnabled } = require('../lib/llm');
 const { buildSystemPrompt } = require('../config/voice-prompt');
 const { classify } = require('../lib/classifier');
-const { getAnswer, ASK_REPEAT, SMS_ALREADY_SENT, getFollowUp, GOODBYE } = require('../config/messages');
+const { getAnswer, ASK_REPEAT, SMS_ALREADY_SENT, getFollowUp, offersCallback, GOODBYE } = require('../config/messages');
 const { planningReply, GYMS } = require('../config/kb');
 const session = require('../lib/session');
 const { speechOrDigit } = require('../lib/speech');
@@ -160,7 +160,10 @@ async function converse(req, res) {
             return res.send(buildRedirect(voiceUrl('collect/name', { motif: lastMotif(callSid) })));
         }
         if (digit === '2' || digit === '3') {
-            return res.send(buildRedirect(voiceUrl('callback', { motif: lastMotif(callSid) })));
+            if (offersCallback({ motif: lastMotif(callSid), smsSent: smsAlreadySent(callSid) })) {
+                return res.send(buildRedirect(voiceUrl('callback', { motif: lastMotif(callSid) })));
+            }
+            return res.send(gatherAfter(followUpSay(callSid)));
         }
         if (digit === '*') {
             return res.send(buildRedirect(voiceUrl('menu')));
@@ -208,7 +211,10 @@ async function converse(req, res) {
         return res.send(buildRedirect(voiceUrl('collect/name', { motif: lastMotif(callSid) })));
     }
     if (CALLBACK_RE.test(question) && question.length < 50) {
-        return res.send(buildRedirect(voiceUrl('callback', { motif: lastMotif(callSid) })));
+        if (offersCallback({ motif: lastMotif(callSid), smsSent: smsAlreadySent(callSid) })) {
+            return res.send(buildRedirect(voiceUrl('callback', { motif: lastMotif(callSid) })));
+        }
+        return res.send(gatherAfter(followUpSay(callSid)));
     }
     if (HUMAN_RE.test(question) && question.length < 60) {
         question = "L'appelant voulait parler à un conseiller. Réponds que tu peux l'aider maintenant et demande sa question concrète : planning, tarifs, essai, résiliation…";

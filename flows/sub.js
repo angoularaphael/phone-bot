@@ -1,13 +1,13 @@
 'use strict';
 
 /**
- * Après une réponse : parole = nouvelle question ; 1 SMS · 2 rappel · * menu.
+ * Après une réponse : parole = nouvelle question ; 1 SMS · 2 rappel (sauf inscription / après SMS) · * menu.
  */
 
 const { buildRedirect, buildVoiceGather } = require('../lib/twiml');
 const { voiceUrl } = require('../lib/url');
 const { speechOrDigit } = require('../lib/speech');
-const { getFollowUp, NO_INPUT, SMS_ALREADY_SENT } = require('../config/messages');
+const { getFollowUp, offersCallback, NO_INPUT, SMS_ALREADY_SENT } = require('../config/messages');
 const session = require('../lib/session');
 
 function sub(req, res) {
@@ -37,7 +37,14 @@ function sub(req, res) {
             return res.send(buildRedirect(voiceUrl('collect/name', { motif })));
         case '2':
         case '3':
-            return res.send(buildRedirect(voiceUrl('callback', { motif })));
+            if (offersCallback({ motif, smsSent })) {
+                return res.send(buildRedirect(voiceUrl('callback', { motif })));
+            }
+            return res.send(buildVoiceGather({
+                say:     NO_INPUT + followUp,
+                action:  voiceUrl('sub', { motif, gym }),
+                timeout: 6,
+            }));
         case '*':
             return res.send(buildRedirect(voiceUrl('menu')));
         default:
