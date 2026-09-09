@@ -103,7 +103,10 @@ const ANSWERS = {
         `Le prélèvement n'est pas mensuel : il a lieu tous les 28 jours, et vous pouvez arrêter à tout moment. ` +
         `Si vous venez toute l'année, l'offre à 259 euros pour 12 mois est plus avantageuse. ` +
         `L'inscription se fait en ligne, en quelques minutes. ` +
-        `Si vous préférez d'abord découvrir la salle, une séance d'essai est possible à 10 euros, à réserver sur internet.`,
+        `Si vous préférez d'abord découvrir la salle, une séance d'essai adulte est possible à 10 euros, à réserver sur internet. Il n'y a pas de créneau à choisir : venez 5 minutes avant le début du cours. Pour un enfant, l'essai est offert.`,
+
+    seance_essai:
+        `Pour un adulte, la séance d'essai est à 10 euros, à réserver sur internet. Vous choisissez la salle et l'activité. Il n'y a pas de créneau à réserver : venez 5 minutes avant le début du cours. Pour un enfant, l'essai est offert.`,
 
     planning:
         `Pour le planning, choisissez d'abord la salle.`,
@@ -130,7 +133,6 @@ const ANSWERS = {
 const ANSWER_ALIASES = {
     horaires:     'infos_pratiques',
     tarifs:       'inscription',
-    seance_essai: 'inscription',
     activites:    'disciplines',
 };
 

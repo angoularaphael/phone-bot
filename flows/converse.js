@@ -40,7 +40,6 @@ function inferMotif(text) {
         horaires:     'infos_pratiques',
         planning:     'planning',
         tarifs:       'inscription',
-        seance_essai: 'inscription',
         autre:        'autre',
     };
     return aliases[motif] || motif || 'autre';

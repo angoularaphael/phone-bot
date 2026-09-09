@@ -134,7 +134,8 @@ function buildFileKnowledge(userText) {
         `À l'oral : « 19 heures 40 », jamais « 19h40 » ni « 19 h ». Pas de nom de coach sauf question explicite.\n` +
         `Si un jour est demandé (demain, aujourd'hui, mardi…) : uniquement CE jour, pas la semaine.\n` +
         `Moins de 3 ans : trop jeune, Baby Boxe à partir de 3 ans. 3 à 6 ans : Baby Boxe, pas la boxe anglaise adulte. 7-11 : éducative. 12-16 : éducative ados.\n` +
-        `Reynerie / Mirail / Bellefontaine = Saint-Cyprien.\n\n` +
+        `Reynerie / Mirail / Bellefontaine = Saint-Cyprien.\n` +
+        `Essai adulte : 10 €. Enfants : offerte. Pas de créneau à choisir : venir 5 minutes avant le début du cours.\n\n` +
         facts
     );
 }
