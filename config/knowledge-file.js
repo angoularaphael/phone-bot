@@ -8,6 +8,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const { resolveAskedDay, filterToDay, filterToSlot } = require('../lib/clock');
+
 const FILE = path.join(__dirname, '..', 'base-de-connaissance.txt');
 
 let cachedRaw = null;
@@ -98,22 +100,27 @@ function selectKnowledge(userText) {
     if (/cyprien|reynerie|mirail|bellefontaine|bagatelle|fer\s+[àa]\s+cheval/i.test(t)) ids.add('7');
     if (/portet/i.test(t)) ids.add('8BIS');
     if (/[ée]tats[-\s]?unis|lalande/i.test(t)) ids.add('8');
-    if (/coach|mehdi|dadi|valentin|mourad|renaud/i.test(t)) ids.add('4');
+    if (/qui\s+(est|c['’]est).*(coach|encadr)|c['’]est qui.*(coach|encadr)|nom du coach|quel coach/i.test(t)) ids.add('4');
     if (/essai|essayer|d[ée]couvrir/i.test(t)) ids.add('10');
     if (/inscri|abonn|dossier|papier/i.test(t) && !wantsKids(t)) ids.add('11');
     if (/r[ée]sili|arr[eê]ter|pr[ée]l[èe]vement|facture/i.test(t)) ids.add('12');
     if (/m[ée]dical|certificat|sant[ée]|blessure/i.test(t)) ids.add('13');
     if (/faq|débutant|debutant|femme|clim|douche/i.test(t)) ids.add('15');
 
+    const asked = resolveAskedDay(t);
     const chosen = [];
     for (const id of ids) {
         const p = partByNum(parts, id);
         if (!p || !p.body) continue;
-        const body = (id === '1' || id === '3' || id === '9') ? p.body.slice(0, 1800) : p.body;
+        let body = (id === '1' || id === '3' || id === '9') ? p.body.slice(0, 1800) : p.body;
+        if (asked && /^(5|6|7|8)/i.test(id)) {
+            body = filterToSlot(filterToDay(body, asked.day), asked.slot);
+        }
         chosen.push(`## ${p.title}\n${body}`);
     }
     for (const block of extra) {
-        if (block) chosen.push(block);
+        if (!block) continue;
+        chosen.push(asked ? filterToDay(block, asked.day) : block);
     }
     return chosen.join('\n\n');
 }
@@ -124,6 +131,8 @@ function buildFileKnowledge(userText) {
     return (
         `# BASE DE CONNAISSANCES BOXING CENTER (source unique des faits)\n` +
         `Réponds à LA question avec ces faits. N'invente rien. Pas de script tout fait.\n` +
+        `À l'oral : « 19 heures 40 », jamais « 19h40 » ni « 19 h ». Pas de nom de coach sauf question explicite.\n` +
+        `Si un jour est demandé (demain, aujourd'hui, mardi…) : uniquement CE jour, pas la semaine.\n` +
         `Moins de 3 ans : trop jeune, Baby Boxe à partir de 3 ans. 3 à 6 ans : Baby Boxe, pas la boxe anglaise adulte. 7-11 : éducative. 12-16 : éducative ados.\n` +
         `Reynerie / Mirail / Bellefontaine = Saint-Cyprien.\n\n` +
         facts

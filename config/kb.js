@@ -15,6 +15,8 @@
  * SALLES
  * ------------------------------------------------------------------ */
 
+const { resolveAskedDay, filterToDay, filterToSlot } = require('../lib/clock');
+
 const GYMS = {
   minimes: {
     label: 'Minimes',
@@ -68,11 +70,11 @@ const CORE = `
 - Sauf mention « compétiteurs » / « compétition » / « confirmés » ou restriction d'âge ou de sexe, TOUS les cours collectifs sont accessibles aux débutants, hommes et femmes, avec intensité adaptée par le coach.
 - Les cours « compétiteurs » ne doivent JAMAIS être proposés comme séance de découverte à un débutant. Idem Open Sparring et « Sparring Anglaise et Kick » : à réserver aux personnes qui ont déjà des bases.
 - ORDRE DE VENTE, et il compte : tu vends D'ABORD les abonnements — 29 € toutes les 4 semaines sans engagement, puis 259 € la saison pour qui pratique toute l'année. Tu défends ces offres, tu réponds aux objections, tu ne lâches pas au premier doute. La séance d'essai à 10 € est ta DERNIÈRE carte : tu ne la sors QUE si la personne a refusé les offres, pour ne pas perdre la vente. Jamais dans ta première réponse, jamais tant que la vente respire encore. Et jamais de pression, de promesse irréaliste ou d'affirmation non vérifiée.
-- Sur un horaire, donner : salle, jour, heure de début, heure de fin, cours, coach, et le public si nécessaire.
-- INTERDIT d'inventer un cours, un horaire, un coach, un diplôme ou un palmarès absent de cette base. Si l'information manque : le dire clairement. Propose d'envoyer le lien du site ou de la boutique par S.M.S. N'oriente JAMAIS vers un conseiller, un manager, un autre numéro ou un transfert d'appel.
+- Sur un horaire, donner : salle, jour, heure de début, heure de fin, et le cours. Ne cite JAMAIS le nom du coach, sauf si on te demande explicitement qui encadre.
+- INTERDIT d'inventer un cours, un horaire, un diplôme ou un palmarès absent de cette base. Si l'information manque : le dire clairement. Propose d'envoyer le lien du site ou de la boutique par S.M.S. N'oriente JAMAIS vers un conseiller, un manager, un autre numéro ou un transfert d'appel.
 - « ACCÈS LIBRE » = entraînement autonome au badge, ce n'est PAS un cours encadré : ne jamais lui attribuer de coach.
 - Pour un enfant ou un adolescent, propose TOUJOURS le cours de sa tranche d'âge (Baby Boxe dès 3 ans, Boxe Éducative 7-11 ans, 12-16 ans, MMA Enfants / Ados 10-16 ans) et jamais un créneau adulte.
-- Un créneau = une ligne du planning. Ne fusionne jamais deux lignes : l'horaire, le cours et le coach d'une ligne vont ensemble.
+- Un créneau = une ligne du planning. Ne fusionne jamais deux lignes : l'horaire et le cours d'une ligne vont ensemble.
 
 # DISCIPLINES
 - MMA : frappes debout + lutte + sol (contrôles, soumissions). Encadré et progressif, débutants acceptés. Le libellé planning « ASSO MMA » = MMA tous niveaux.
@@ -438,7 +440,7 @@ SAMEDI 11h00-12h00 Cross Training (Clément)
 
 /* Bornes de mots obligatoires : sans elles, « bonjour » déclenchait « jour ». */
 const PLANNING_INTENT =
-  /planning|horaire|cr[ée]?neau|quelle?\s+heure|\bquand\b|\bcours\b|s[ée]ance|programme|\bjours?\b|\blundi\b|\bmardi\b|\bmercredi\b|\bjeudi\b|\bvendredi\b|\bsamedi\b|\bdimanche\b|\bmidi\b|\bsoirs?\b|\bmatin\b/i;
+  /planning|horaire|cr[ée]?neau|quelle?\s+heure|\bquand\b|\bcours\b|s[ée]ance|programme|\bjours?\b|\blundi\b|\bmardi\b|\bmercredi\b|\bjeudi\b|\bvendredi\b|\bsamedi\b|\bdimanche\b|\bmidi\b|\bsoirs?\b|\bmatin\b|\bdemain\b|aujourd/i;
 
 const DISCIPLINE_INTENT =
   /boxe|boxing|anglaise|tha[iï]|k1|kick|pieds[-\s]?poings|mma|grappling|jjb|jiu|savate|fran[çc]aise|hyrox|cross|hiit|lady|sparring|baby|[ée]ducative|camp|enfant|ado/i;
@@ -486,15 +488,15 @@ function nearbyGymId(text) {
 
 const KIDS_SPOKEN = {
   minimes:
-    'À Minimes, pour un enfant de 7 à 11 ans, c\'est la boxe éducative mercredi et samedi, de 15 heures à 16 heures, avec Mehdi. L\'inscription se fait en ligne.',
+    'À Minimes, pour un enfant de 7 à 11 ans, c\'est la boxe éducative mercredi et samedi, de 15 heures à 16 heures. L\'inscription se fait en ligne.',
   ramonville:
-    'À Ramonville, pour un enfant de 7 à 11 ans, c\'est la boxe éducative mercredi et samedi, de 15 heures à 16 heures, avec Valentin Guth. L\'inscription se fait en ligne.',
+    'À Ramonville, pour un enfant de 7 à 11 ans, c\'est la boxe éducative mercredi et samedi, de 15 heures à 16 heures. L\'inscription se fait en ligne.',
   'st-cyprien':
-    'À Saint-Cyprien, 11 rue Sainte-Lucie, près du Fer à Cheval. Pour un enfant de 7 à 11 ans, boxe éducative mercredi et samedi, de 15 heures à 16 heures, avec Dadi. L\'inscription se fait en ligne.',
+    'À Saint-Cyprien, 11 rue Sainte-Lucie, près du Fer à Cheval. Pour un enfant de 7 à 11 ans, boxe éducative mercredi et samedi, de 15 heures à 16 heures. L\'inscription se fait en ligne.',
   portet:
-    'À Portet, pour un enfant de 7 à 11 ans, c\'est la boxe éducative mercredi et samedi, de 16 heures à 17 heures, avec Mourad. L\'inscription se fait en ligne.',
+    'À Portet, pour un enfant de 7 à 11 ans, c\'est la boxe éducative mercredi et samedi, de 16 heures à 17 heures. L\'inscription se fait en ligne.',
   'etats-unis':
-    'Aux États-Unis, pour un enfant de 7 à 11 ans, c\'est la boxe pieds-poings mercredi et samedi, de 15 heures à 16 heures, avec Renaud. L\'inscription se fait en ligne.',
+    'Aux États-Unis, pour un enfant de 7 à 11 ans, c\'est la boxe pieds-poings mercredi et samedi, de 15 heures à 16 heures. L\'inscription se fait en ligne.',
 };
 
 const KIDS_ASK_SALLE =
@@ -545,25 +547,29 @@ function detectGyms(text) {
 /** Réponse vocale courte quand on a la salle et qu'on parle planning. */
 const SPOKEN_PLANNING = {
   minimes:
-    'À Minimes, 12 rue de Fenouillet. Le soir, c\'est surtout la boxe anglaise avec Mehdi. Lundi, Boxing Camp à midi quarante, puis Boxe Anglaise loisirs à 19 heures 40. Boxing Lady le lundi et le mercredi à 18 heures 30. Les enfants, mercredi et samedi après-midi. Vous voulez un jour en particulier ?',
+    'À Minimes, 12 rue de Fenouillet. Le soir, c\'est surtout la boxe anglaise. Lundi, Boxing Camp à midi quarante, puis Boxe Anglaise loisirs à 19 heures 40. Boxing Lady le lundi et le mercredi à 18 heures 30. Les enfants, mercredi et samedi après-midi. Vous voulez un jour en particulier ?',
   ramonville:
-    'À Ramonville, 33 rue des Ormes. Le soir, Lady Punch avec Sonia à 18 heures, puis pieds-poings, et Boxe Anglaise avec Farouk vers 19 heures 45. Mardi et jeudi, Jérôme fait Grappling puis MMA, débutants acceptés. Les enfants, mercredi et samedi avec Valentin Guth. Quel jour vous arrange ?',
+    'À Ramonville, 33 rue des Ormes. Le soir, Lady Punch à 18 heures, puis pieds-poings, et Boxe Anglaise vers 19 heures 45. Mardi et jeudi, Grappling puis MMA, débutants acceptés. Les enfants, mercredi et samedi. Quel jour vous arrange ?',
   'st-cyprien':
-    'À Saint-Cyprien, 11 rue Sainte-Lucie, près du Fer à Cheval. Le soir, c\'est boxe et thaï. Lundi : Boxing Camp à 18 heures 20 avec Brice, Cross Training à 19 heures, Boxe Anglaise à 20 heures avec Dadi. Mardi : Lady Punch, Grappling, puis Boxe Thaï. Mercredi, il y a aussi l\'HYROX. Les enfants, mercredi et samedi. Vous voulez un jour précis ?',
+    'À Saint-Cyprien, 11 rue Sainte-Lucie, près du Fer à Cheval. Le soir, c\'est boxe et thaï. Lundi : Boxing Camp à 18 heures 20, Cross Training à 19 heures, Boxe Anglaise à 20 heures. Mardi : Lady Punch, Grappling, puis Boxe Thaï. Mercredi, il y a aussi l\'HYROX. Les enfants, mercredi et samedi. Vous voulez un jour précis ?',
   portet:
-    'À Portet, 61 route d\'Espagne. Le planning est encore provisoire. Le soir, Boxe Anglaise avec Valentin Tapia, Kick et K1 avec Samuel Pinto. Mardi : Lady Kick à 18 heures, Kick à 19 heures, Boxe Anglaise à 20 heures. Mercredi, il y a aussi les cours enfants. Quel jour vous intéresse ?',
+    'À Portet, 61 route d\'Espagne. Le planning est encore provisoire. Le soir, Boxe Anglaise, Kick et K1. Mardi : Lady Kick à 18 heures, Kick à 19 heures, Boxe Anglaise à 20 heures. Mercredi, il y a aussi les cours enfants. Quel jour vous intéresse ?',
   'etats-unis':
-    'Aux États-Unis, 388 avenue des États-Unis. Trois espaces. Le soir, Renaud en boxe et pieds-poings, Zouhir en MMA et grappling, et Yannis en HYROX ou Cross Training. Les enfants pieds-poings, mercredi et samedi. Vous voulez la boxe, le MMA, ou le fitness ?',
+    'Aux États-Unis, 388 avenue des États-Unis. Trois espaces. Le soir : boxe et pieds-poings, MMA et grappling, et HYROX ou Cross Training. Les enfants pieds-poings, mercredi et samedi. Vous voulez la boxe, le MMA, ou le fitness ?',
 };
 
 function planningReply(text, lastGym, lastQuestion) {
-  const gyms = detectGyms(`${text || ''} ${lastGym || ''} ${lastQuestion || ''}`);
+  const blob = `${text || ''} ${lastQuestion || ''}`;
+  const gyms = detectGyms(blob);
   const gym = gyms[0] || lastGym || null;
   const current = foldSpeech(text || '');
   const wordCount = String(text || '').trim().split(/\s+/).filter(Boolean).length;
   const shortGymAnswer = detectGyms(text || '').length > 0 && wordCount <= 6;
   const enrollNow = /inscri|abonn|enfant|ado|mineur|fils|fille|gamin/i.test(current);
   if (enrollNow) return { gym, text: null };
+  const asked = resolveAskedDay(blob);
+  /* Un jour précis (demain, ce soir, mardi…) : pas le résumé de la semaine. */
+  if (asked) return { gym, text: null };
   const wantsPlanning = PLANNING_INTENT.test(current)
     || (shortGymAnswer && /planning|horaire|cours|creneau/i.test(lastQuestion || ''));
   if (gym && SPOKEN_PLANNING[gym] && (wantsPlanning || shortGymAnswer) && !enrollNow) {
@@ -643,15 +649,23 @@ function packPlannings(ids) {
  */
 function planningContext(text) {
   const t = String(text || '');
+  const asked = resolveAskedDay(t);
   const gyms = detectGyms(t);
-  if (gyms.length) return packPlannings(gyms);
-
-  /* Discipline nommée sans salle : on charge les plannings des salles concernées. */
-  const byDiscipline = DISCIPLINE_GYMS.find((d) => d.test.test(t));
-  if (byDiscipline) return packPlannings(byDiscipline.gyms);
-
-  if (PLANNING_INTENT.test(t) || DISCIPLINE_INTENT.test(t)) return GYM_INDEX;
-  return '';
+  let packed = '';
+  if (gyms.length) packed = packPlannings(gyms);
+  else if (asked && PLANNING_INTENT.test(t)) {
+    return `${GYM_INDEX}\n\nJOUR DEMANDÉ : ${asked.day} (${asked.label}). Demande d'abord la salle, puis donne UNIQUEMENT ce jour-là. Pas la semaine.`;
+  } else {
+    const byDiscipline = DISCIPLINE_GYMS.find((d) => d.test.test(t));
+    if (byDiscipline) packed = packPlannings(byDiscipline.gyms);
+    else if (PLANNING_INTENT.test(t) || DISCIPLINE_INTENT.test(t)) return GYM_INDEX;
+    else return '';
+  }
+  if (asked && packed) {
+    packed = filterToDay(packed, asked.day);
+    packed = filterToSlot(packed, asked.slot);
+  }
+  return packed;
 }
 
 /* ------------------------------------------------------------------ *
@@ -697,7 +711,7 @@ const ON_DEMAND = [
       'i'
     ),
   },
-  { key: 'coachs', test: /coach|prof|entra[îi]neur|encadr|qui\s+(donne|anime|s'occupe)|mehdi|dadi|brice|j[ée]r[ôo]me|zouhir|valentin|sonia|renaud|samuel|nicolas|enzo|mourad|ingrid|farouk|hicham|tawee|yannis|cl[ée]ment|chlo[ée]|david/i },
+  { key: 'coachs', test: /qui\s+(est|c['’]est).*(coach|encadr)|c['’]est qui.*(coach|encadr)|nom du coach|quel coach|head coach/i },
   { key: 'inscription', test: /inscri|s'abonner|abonner|dossier|mineur|enfant|parent|papier|document|contrat|adh[ée]sion|activ/i },
   /* « partir » est volontairement absent : « à partir de quel âge » n'est pas une résiliation. */
   { key: 'resiliation', test: /r[ée]sili|annul|arr[êe]ter|stopper|pr[ée]l[èe]vement|rembours|engagement|r[ée]tractation|badge|quitter|me d[ée]sinscrire/i },

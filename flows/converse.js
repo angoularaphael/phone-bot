@@ -13,7 +13,7 @@ const { log, warn } = require('../lib/logger');
 const { chatCompletion, isAiEnabled } = require('../lib/llm');
 const { buildSystemPrompt } = require('../config/voice-prompt');
 const { classify, isCancelIntent } = require('../lib/classifier');
-const { getAnswer, ASK_REPEAT, SMS_ALREADY_SENT, getFollowUp, GOODBYE, THINKING } = require('../config/messages');
+const { getAnswer, ASK_REPEAT, SMS_ALREADY_SENT, getFollowUp, GOODBYE } = require('../config/messages');
 const { planningReply, GYMS, correctStt, nearbyGymId, detectGyms } = require('../config/kb');
 const { wantsKids, fallbackFromKnowledge } = require('../config/knowledge-file');
 const session = require('../lib/session');
@@ -46,11 +46,50 @@ function inferMotif(text) {
     return aliases[motif] || motif || 'autre';
 }
 
-function sanitizeSpeech(text) {
+const COACH_NAMES =
+    'Mehdi|Dadi|Brice|J[ée]r[ôo]me|Zouhir|Valentin(?:\\s+(?:Tapia|Guth))?|Sonia|Renaud|Samuel(?:\\s+Pinto)?|Nicolas|Enzo|Mourad|Ingrid|Farouk|Hicham|Tawee|Yannis(?:\\s+Chouet)?|Cl[ée]ment|Chlo[ée]';
+
+function askedCoachName(text) {
+    return /qui\s+(est|c['’]est).*(coach|encadr)|c['’]est qui.*(coach|encadr)|nom du coach|quel coach/i.test(
+        text || ''
+    );
+}
+
+function oralHour(h, m) {
+    const hh = String(Number(h));
+    const mm = Number(m);
+    if (!mm) return `${hh} heures`;
+    return `${hh} heures ${mm}`;
+}
+
+function speakHours(text) {
+    let t = String(text || '');
+    t = t.replace(
+        /\b(\d{1,2})\s*[hH]\s*(\d{2})\s*[–\-àa]\s*(\d{1,2})\s*[hH]\s*(\d{2})\b/g,
+        (_, a, b, c, d) => `${oralHour(a, b)} à ${oralHour(c, d)}`
+    );
+    t = t.replace(/\b(\d{1,2})\s*[hH]\s*(\d{2})\b/g, (_, h, m) => oralHour(h, m));
+    t = t.replace(/\b(\d{1,2})\s+h\s+(?:et\s+)?(\d{1,2})\b/gi, (_, h, m) => oralHour(h, m));
+    return t;
+}
+
+function stripCoachNames(text) {
+    let t = String(text || '');
+    t = t.replace(new RegExp(`\\s*\\([^)]*(?:${COACH_NAMES})[^)]*\\)`, 'gi'), '');
+    t = t.replace(new RegExp(`\\s*,?\\s*(?:avec|coach)\\s+(?:le\\s+)?(?:${COACH_NAMES})\\b`, 'gi'), '');
+    t = t.replace(new RegExp(`\\b(?:${COACH_NAMES})\\s+(?:fait|donne|encadre)\\b`, 'gi'), 'il y a');
+    t = t.replace(/\s{2,}/g, ' ').replace(/\s+\./g, '.');
+    return t;
+}
+
+function sanitizeSpeech(text, { keepCoaches = false } = {}) {
     let t = String(text || '');
     t = t.replace(/\[boutons:[^\]]*\]/gi, '');
     t = t.replace(/https?:\/\/\S+/gi, '');
     t = t.replace(/[*_`#]+/g, '');
+    t = t.replace(/\s*un instant[, ]+je v[ée]rifie[.!]?\s*/gi, ' ');
+    t = speakHours(t);
+    if (!keepCoaches) t = stripCoachNames(t);
     t = t.replace(/\s+/g, ' ').trim();
     if ((t.match(/[.!?]/g) || []).length < 1 && t.length > 40) {
         t = t.replace(/\s+(vous |est-ce |sinon )/i, '. $1');
@@ -81,7 +120,9 @@ function contextBlob(callSid, question) {
 
 async function llmReply(callSid, question) {
     if (!isAiEnabled()) return null;
-    const system = buildSystemPrompt(contextBlob(callSid, question));
+    const sess = session.get(callSid);
+    const allTalk = (sess.messages || []).map((m) => String(m.content || '')).join('\n');
+    const system = buildSystemPrompt(`${allTalk}\n${contextBlob(callSid, question)}\n${question}`);
     const history = session.historyForLlm(callSid);
     const prior = history.length && history[history.length - 1].role === 'user'
         ? history.slice(0, -1)
@@ -93,7 +134,7 @@ async function llmReply(callSid, question) {
     ];
     const { content, provider } = await chatCompletion(messages, { maxTokens: 400, temperature: 0.25 });
     log(`🤖 LLM ${provider || '?'} — CallSid: ${callSid}`);
-    return sanitizeSpeech(content);
+    return sanitizeSpeech(content, { keepCoaches: askedCoachName(question) });
 }
 
 function fallbackReply(question) {
@@ -127,7 +168,7 @@ async function answerQuestion(callSid, question) {
         if (!text) text = fallbackReply(question);
     }
 
-    text = sanitizeSpeech(text);
+    text = sanitizeSpeech(text, { keepCoaches: askedCoachName(question) });
     const motif = cancel
         ? 'administratif'
         : (wantsKids(question) ? 'inscription' : inferMotif(question));
@@ -172,9 +213,9 @@ function gatherAsk(say) {
     });
 }
 
-function holdThenThink(first) {
+function holdThenThink() {
     return buildPlayThenRedirect({
-        say: first ? THINKING : null,
+        say: null,
         play: holdMusicUrl(),
         action: voiceUrl('converse', { phase: 'think' }),
         pause: 2,
@@ -238,7 +279,7 @@ async function converse(req, res) {
                 job.done = true;
                 job.result = job.result || fallbackReply(job.question);
             } else {
-                return res.send(holdThenThink(false));
+                return res.send(holdThenThink());
             }
         }
         thinkingJobs.delete(callSid);
@@ -312,7 +353,7 @@ async function converse(req, res) {
     }
 
     startThinking(callSid, question);
-    return res.send(holdThenThink(true));
+    return res.send(holdThenThink());
 }
 
 module.exports = { converse, DTMF_ASK, sanitizeSpeech, clearThinkingJob };
