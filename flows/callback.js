@@ -11,7 +11,8 @@ const { buildVoiceGather } = require('../lib/twiml');
 const { voiceUrl }         = require('../lib/url');
 const { updateCall }       = require('../lib/tracker');
 const { log }              = require('../lib/logger');
-const { CALLBACK_CONFIRM, FOLLOW_UP } = require('../config/messages');
+const session = require('../lib/session');
+const { CALLBACK_CONFIRM, getFollowUp } = require('../config/messages');
 
 async function callback(req, res) {
     const motif   = req.query.motif || 'autre';
@@ -25,8 +26,9 @@ async function callback(req, res) {
         status:            'callback_requested',
     });
 
+    const smsSent = !!session.get(callSid).smsSent;
     const twiml = buildVoiceGather({
-        say:     CALLBACK_CONFIRM + ' ' + FOLLOW_UP,
+        say:     CALLBACK_CONFIRM + ' ' + getFollowUp({ motif, smsSent }),
         action:  voiceUrl('sub', { motif }),
         timeout: 10,
     });

@@ -12,16 +12,10 @@ const { log, warn } = require('../lib/logger');
 const { chatCompletion, isAiEnabled } = require('../lib/llm');
 const { buildSystemPrompt } = require('../config/voice-prompt');
 const { classify } = require('../lib/classifier');
-const { getAnswer } = require('../config/messages');
+const { getAnswer, ASK_REPEAT, SMS_ALREADY_SENT, getFollowUp, GOODBYE } = require('../config/messages');
 const { planningReply, GYMS } = require('../config/kb');
 const session = require('../lib/session');
 const { speechOrDigit } = require('../lib/speech');
-const {
-    ASK_REPEAT,
-    FOLLOW_UP,
-    FOLLOW_UP_REPEAT,
-    GOODBYE,
-} = require('../config/messages');
 
 const DTMF_ASK = {
     1: "Quels sont les tarifs, les offres en cours et comment s'inscrire ?",
@@ -127,6 +121,14 @@ function lastMotif(callSid) {
     return session.get(callSid).lastMotif || 'infos_pratiques';
 }
 
+function smsAlreadySent(callSid) {
+    return !!session.get(callSid).smsSent;
+}
+
+function followUpSay(callSid) {
+    return getFollowUp({ motif: lastMotif(callSid), smsSent: smsAlreadySent(callSid) });
+}
+
 function gatherAfter(say) {
     return buildVoiceGather({
         say,
@@ -152,6 +154,9 @@ async function converse(req, res) {
 
     if (phase === 'after' && !spoken) {
         if (digit === '1') {
+            if (smsAlreadySent(callSid)) {
+                return res.send(gatherAfter(`${SMS_ALREADY_SENT} ${followUpSay(callSid)}`));
+            }
             return res.send(buildRedirect(voiceUrl('collect/name', { motif: lastMotif(callSid) })));
         }
         if (digit === '2' || digit === '3') {
@@ -166,7 +171,7 @@ async function converse(req, res) {
         if (!digit && !speech) {
             const sess = session.addMiss(callSid);
             if (sess.misses >= 2) return res.send(buildHangup(GOODBYE));
-            return res.send(gatherAfter(FOLLOW_UP_REPEAT));
+            return res.send(gatherAfter(followUpSay(callSid)));
         }
         if (digit === '4' || digit === '5') {
             return res.send(buildRedirect(voiceUrl('menu')));
@@ -197,6 +202,9 @@ async function converse(req, res) {
         return res.send(buildRedirect(voiceUrl('bye')));
     }
     if (SMS_RE.test(question) && question.length < 50) {
+        if (smsAlreadySent(callSid)) {
+            return res.send(gatherAfter(`${SMS_ALREADY_SENT} ${followUpSay(callSid)}`));
+        }
         return res.send(buildRedirect(voiceUrl('collect/name', { motif: lastMotif(callSid) })));
     }
     if (CALLBACK_RE.test(question) && question.length < 50) {
@@ -209,7 +217,7 @@ async function converse(req, res) {
     log(`🗣️  Converse — CallSid: ${callSid}  Q: ${question.slice(0, 80)}`);
 
     const answer = await answerQuestion(callSid, question);
-    return res.send(gatherAfter(`${answer} ${FOLLOW_UP}`));
+    return res.send(gatherAfter(`${answer} ${followUpSay(callSid)}`));
 }
 
 module.exports = { converse, DTMF_ASK, sanitizeSpeech };

@@ -47,14 +47,33 @@ const ASK_REPEAT =
 const ASK_DTMF_HINT = MENU_REPEAT;
 
 const SUB_MENU =
-    `Pour un S.M.S., appuyez sur 1. ` +
-    `Un rappel, 2. ` +
-    `Retour au menu, étoile. ` +
-    `Ou posez une autre question.`;
+    `Si vous voulez recevoir un S.M.S. avec les informations et les liens utiles, appuyez sur la touche 1. ` +
+    `Si vous préférez que l'on vous rappelle, appuyez sur la touche 2. ` +
+    `Pour revenir au menu principal, appuyez sur étoile. ` +
+    `Vous pouvez aussi me poser une autre question.`;
+
+const SUB_MENU_INSCRIPTION =
+    `Si vous voulez recevoir un S.M.S. avec les liens pour vous inscrire, appuyez sur la touche 1. ` +
+    `Si vous préférez que l'on vous rappelle, appuyez sur la touche 2. ` +
+    `Pour revenir au menu principal, appuyez sur étoile. ` +
+    `Vous pouvez aussi me poser une autre question.`;
+
+const FOLLOW_UP_AFTER_SMS =
+    `Vous pouvez me poser une autre question. ` +
+    `Si vous préférez que l'on vous rappelle, appuyez sur la touche 2. ` +
+    `Pour revenir au menu principal, appuyez sur étoile.`;
 
 const FOLLOW_UP = SUB_MENU;
 
 const FOLLOW_UP_REPEAT = SUB_MENU;
+
+function getFollowUp({ motif, smsSent } = {}) {
+    if (smsSent) return FOLLOW_UP_AFTER_SMS;
+    if (motif === 'inscription' || motif === 'tarifs' || motif === 'seance_essai') {
+        return SUB_MENU_INSCRIPTION;
+    }
+    return SUB_MENU;
+}
 
 const HUMAN_STEER =
     `Je peux vous répondre. ` + WELCOME;
@@ -66,10 +85,12 @@ const ANSWERS = {
         `Cinq salles à Toulouse et Portet.`,
 
     inscription:
-        `Offre en cours : 29 euros toutes les 4 semaines, sans engagement. ` +
-        `Ce n'est pas un prélèvement mensuel. C'est tous les 28 jours. ` +
-        `L'année complète : 259 euros. ` +
-        `Essai : 10 euros, réservable en ligne.`,
+        `Voici nos formules. ` +
+        `Vous pouvez vous abonner sans engagement pour 29 euros toutes les 4 semaines. ` +
+        `Le prélèvement n'est pas mensuel : il a lieu tous les 28 jours, et vous pouvez arrêter à tout moment. ` +
+        `Si vous venez toute l'année, l'offre à 259 euros pour 12 mois est plus avantageuse. ` +
+        `L'inscription se fait en ligne, en quelques minutes. ` +
+        `Si vous préférez d'abord découvrir la salle, une séance d'essai est possible à 10 euros, à réserver sur internet.`,
 
     planning:
         `Pour le planning, choisissez d'abord la salle.`,
@@ -84,15 +105,13 @@ const ANSWERS = {
         `Pour découvrir, prenez un cours loisirs, tous niveaux.`,
 
     administratif:
-        `Pour un sans engagement, c'est uniquement en ligne. ` +
-        `Gérer mon abonnement, puis Résilier. ` +
-        `Plus de 72 heures avant le prélèvement. ` +
-        `Facture et contrat : même espace en ligne. ` +
-        `Je peux vous envoyer le lien par S.M.S.`,
+        `Pour un abonnement sans engagement, la résiliation se fait uniquement en ligne. ` +
+        `Allez sur Gérer mon abonnement, puis Résilier. ` +
+        `Il faut le faire plus de 72 heures avant le prochain prélèvement. ` +
+        `La facture et le contrat se trouvent dans le même espace en ligne.`,
 
     autre:
-        `Dites votre question. ` +
-        `Sinon je peux envoyer un S.M.S., ou on vous rappelle.`,
+        `Dites-moi votre question, je vous écoute.`,
 };
 
 const ANSWER_ALIASES = {
@@ -108,16 +127,23 @@ function getAnswer(motif) {
 }
 
 const COLLECT_NAME =
-    `Pour le S.M.S., dites votre prénom après le signal.`;
+    `Très bien. Je vais vous envoyer un S.M.S. avec les informations. ` +
+    `Dites votre prénom après le signal, pour que le message soit à votre nom.`;
 
 const COLLECT_NAME_FALLBACK =
-    `Je n'ai pas bien entendu. Dites votre prénom après le signal.`;
+    `Je n'ai pas bien entendu. Dites seulement votre prénom après le signal.`;
 
 const COLLECT_PHONE =
-    `Sur quel numéro ? Tapez vos 10 chiffres.`;
+    `Sur quel numéro souhaitez-vous recevoir le S.M.S. ? Tapez les 10 chiffres de votre téléphone.`;
 
 const SMS_CONFIRM =
-    (name) => `C'est envoyé${name ? `, ${name}` : ''}.`;
+    (name) => `C'est envoyé${name ? `, ${name}` : ''}. Vous allez le recevoir dans quelques instants.`;
+
+const SMS_ALREADY_SENT =
+    `Le S.M.S. a déjà été envoyé. Vous n'avez rien à faire de plus de ce côté.`;
+
+const SMS_FAILED =
+    `Je n'ai pas réussi à envoyer le S.M.S. Vous pouvez réessayer en appuyant sur la touche 1.`;
 
 const CALLBACK_CONFIRM =
     `C'est noté. On vous rappelle du lundi au samedi.`;
@@ -147,8 +173,11 @@ module.exports = {
     ASK_DTMF_HINT,
     FOLLOW_UP,
     FOLLOW_UP_REPEAT,
+    FOLLOW_UP_AFTER_SMS,
+    getFollowUp,
     HUMAN_STEER,
     SUB_MENU,
+    SUB_MENU_INSCRIPTION,
     ANSWERS,
     getAnswer,
     ANSWER_ALIASES,
@@ -156,6 +185,8 @@ module.exports = {
     COLLECT_NAME_FALLBACK,
     COLLECT_PHONE,
     SMS_CONFIRM,
+    SMS_ALREADY_SENT,
+    SMS_FAILED,
     CALLBACK_CONFIRM,
     TRANSFER_WAIT,
     TRANSFER_FAILED,

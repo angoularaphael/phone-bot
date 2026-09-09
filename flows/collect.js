@@ -21,18 +21,30 @@ const { sendSms, buildSmsBody } = require('../lib/sms');
 const { updateCall }  = require('../lib/tracker');
 const { getRoute }    = require('../config/routing');
 const { log, warn }   = require('../lib/logger');
+const session = require('../lib/session');
 const {
     COLLECT_NAME,
     COLLECT_NAME_FALLBACK,
     COLLECT_PHONE,
     SMS_CONFIRM,
-    FOLLOW_UP,
+    SMS_ALREADY_SENT,
+    SMS_FAILED,
+    getFollowUp,
 } = require('../config/messages');
 
 // ─── Étape 1 : Prénom ────────────────────────────────────────────────────────
 
 function collectName(req, res) {
     const motif = req.query.motif || 'autre';
+    const callSid = req.body.CallSid;
+
+    if (session.get(callSid).smsSent) {
+        return res.type('text/xml').send(buildVoiceGather({
+            say:     `${SMS_ALREADY_SENT} ${getFollowUp({ motif, smsSent: true })}`,
+            action:  voiceUrl('sub', { motif }),
+            timeout: 6,
+        }));
+    }
 
     const twiml = buildSpeechGather({
         say:    COLLECT_NAME,
@@ -80,6 +92,14 @@ async function collectSave(req, res) {
     const callSid  = req.body.CallSid;
     const caller   = req.body.From     || '';
 
+    if (session.get(callSid).smsSent) {
+        return res.type('text/xml').send(buildVoiceGather({
+            say:     `${SMS_ALREADY_SENT} ${getFollowUp({ motif, smsSent: true })}`,
+            action:  voiceUrl('sub', { motif }),
+            timeout: 6,
+        }));
+    }
+
     // Numéro cible : priorité au DTMF saisi, sinon numéro appelant
     const rawPhone  = (req.body.Digits || req.query.phone || caller || '').replace(/\s/g, '');
     const toPhone   = normalizePhone(rawPhone);
@@ -110,7 +130,11 @@ async function collectSave(req, res) {
 
     log(`📋 Collecte — CallSid: ${callSid}  Prénom: ${name || '(vide)'}  Tel: ${toPhone || '?'}  SMS: ${smsSent}`);
 
-    const confirmText = SMS_CONFIRM(name) + ' ' + FOLLOW_UP;
+    if (smsSent) session.touch(callSid, { smsSent: true });
+
+    const confirmText = smsSent
+        ? `${SMS_CONFIRM(name)} ${getFollowUp({ motif, smsSent: true })}`
+        : `${SMS_FAILED} ${getFollowUp({ motif, smsSent: false })}`;
     res.type('text/xml');
     res.send(buildVoiceGather({
         say:     confirmText,

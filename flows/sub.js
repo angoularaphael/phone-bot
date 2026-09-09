@@ -7,12 +7,16 @@
 const { buildRedirect, buildVoiceGather } = require('../lib/twiml');
 const { voiceUrl } = require('../lib/url');
 const { speechOrDigit } = require('../lib/speech');
-const { SUB_MENU, NO_INPUT } = require('../config/messages');
+const { getFollowUp, NO_INPUT, SMS_ALREADY_SENT } = require('../config/messages');
+const session = require('../lib/session');
 
 function sub(req, res) {
     const { digit, spoken } = speechOrDigit(req);
     const motif = req.query.motif || 'infos_pratiques';
     const gym = req.query.gym || '';
+    const callSid = req.body.CallSid;
+    const smsSent = !!session.get(callSid).smsSent;
+    const followUp = getFollowUp({ motif, smsSent });
 
     res.type('text/xml');
 
@@ -23,6 +27,13 @@ function sub(req, res) {
 
     switch (digit) {
         case '1':
+            if (smsSent) {
+                return res.send(buildVoiceGather({
+                    say:     `${SMS_ALREADY_SENT} ${followUp}`,
+                    action:  voiceUrl('sub', { motif, gym }),
+                    timeout: 6,
+                }));
+            }
             return res.send(buildRedirect(voiceUrl('collect/name', { motif })));
         case '2':
         case '3':
@@ -31,7 +42,7 @@ function sub(req, res) {
             return res.send(buildRedirect(voiceUrl('menu')));
         default:
             return res.send(buildVoiceGather({
-                say:     NO_INPUT + SUB_MENU,
+                say:     NO_INPUT + followUp,
                 action:  voiceUrl('sub', { motif, gym }),
                 timeout: 6,
             }));
