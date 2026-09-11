@@ -114,14 +114,14 @@ Pas annoncé au menu. Pendant l'accueil (ou plus tard) : **9** puis **9**.
 
 1. Touche **1** : poser la question (après le bip)
 2. Touche **2** : enregistrer la réponse
-3. Un SMS part sur le mobile qui appelle :
+3. Un SMS part toujours sur **07 62 64 14 73**, quel que soit le numéro qui enregistre :
 
 ```
 Q : …
 R : …
 ```
 
-Étoile pour revenir au menu. Copie optionnelle : `TRAIN_SMS_TO` dans le `.env`.
+Étoile pour revenir au menu. Copie optionnelle en plus : `TRAIN_SMS_TO` dans le `.env`.
 
 ---
 

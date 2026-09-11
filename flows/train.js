@@ -15,7 +15,7 @@ const { voiceUrl } = require('../lib/url');
 const { speechOrDigit } = require('../lib/speech');
 const session = require('../lib/session');
 const { log } = require('../lib/logger');
-const { isMobile, normalizePhone, sendTrainPair } = require('../lib/train-qa');
+const { sendTrainPair } = require('../lib/train-qa');
 const {
     TRAIN_HUB,
     TRAIN_ASK_Q,
@@ -25,7 +25,6 @@ const {
     TRAIN_SMS_OK,
     TRAIN_SMS_FAIL,
     TRAIN_MISS,
-    TRAIN_PHONE,
 } = require('../config/messages');
 
 function hubTwiml(say = TRAIN_HUB) {
@@ -124,7 +123,6 @@ async function sendAndConfirm(req, res) {
     const callSid = req.body.CallSid;
     const sess = session.get(callSid);
     const caller = req.body.From || '';
-    const typed = req.body.Digits || req.query.phone || '';
 
     res.type('text/xml');
 
@@ -132,23 +130,9 @@ async function sendAndConfirm(req, res) {
         return res.send(hubTwiml(sess.trainQ ? TRAIN_Q_OK : TRAIN_NEED_Q));
     }
 
-    let to = normalizePhone(typed) || (isMobile(caller) ? caller : null);
-    if (!to) {
-        if (!typed) {
-            return res.send(buildGather({
-                say: TRAIN_PHONE,
-                action: voiceUrl('train/send'),
-                numDigits: 10,
-                timeout: 15,
-            }));
-        }
-        return res.send(hubTwiml(TRAIN_SMS_FAIL));
-    }
-
     const result = await sendTrainPair({
         q: sess.trainQ,
         r: sess.trainR,
-        to,
         from: caller,
         callSid,
     });
