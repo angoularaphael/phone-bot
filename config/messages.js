@@ -52,17 +52,17 @@ const ASK_REPEAT =
 const ASK_DTMF_HINT = MENU_REPEAT;
 
 const SUB_MENU =
-    `Si vous voulez recevoir un S.M.S. avec les informations et les liens utiles, appuyez sur la touche 1. ` +
+    `Les informations et les liens sont sur boxingcenter.fr. ` +
     `Pour revenir au menu principal, appuyez sur étoile. ` +
     `Vous pouvez aussi me poser une autre question.`;
 
 const SUB_MENU_INSCRIPTION =
-    `Si vous voulez recevoir un S.M.S. avec les liens pour vous inscrire, appuyez sur la touche 1. ` +
+    `L'inscription se fait sur boxingcenter.fr. ` +
     `Pour revenir au menu principal, appuyez sur étoile. ` +
     `Vous pouvez aussi me poser une autre question.`;
 
 const SUB_MENU_RESIL =
-    `Si vous voulez recevoir un S.M.S. avec le lien pour résilier ou gérer votre abonnement, appuyez sur la touche 1. ` +
+    `La résiliation se fait sur boxingcenter.fr, espace Gérer mon abonnement. ` +
     `Pour revenir au menu principal, appuyez sur étoile. ` +
     `Vous pouvez aussi me poser une autre question.`;
 
@@ -172,7 +172,9 @@ const SMS_ALREADY_SENT =
     `Le S.M.S. a déjà été envoyé. Vous n'avez rien à faire de plus de ce côté.`;
 
 const SMS_FAILED =
-    `Je n'ai pas réussi à envoyer le S.M.S. Vous pouvez réessayer en appuyant sur la touche 1.`;
+    `Je n'envoie plus de S.M.S. Tout est sur boxingcenter.fr.`;
+
+const SMS_DISABLED = SMS_FAILED;
 
 const CALLBACK_CONFIRM =
     `C'est noté. On vous rappelle du lundi au samedi.`;
@@ -208,7 +210,7 @@ const TRAIN_Q_OK =
     `Question notée. Appuyez sur 2 pour la réponse.`;
 
 const TRAIN_SMS_OK =
-    `Le S.M.S. est parti. Pour une autre paire, appuyez sur 1. Étoile pour le menu.`;
+    `C'est enregistré. Pour une autre paire, appuyez sur 1. Étoile pour le menu.`;
 
 const TRAIN_SMS_FAIL =
     `Le S.M.S. n'est pas parti. Appuyez sur 2 pour réessayer, ou étoile pour quitter.`;
@@ -253,6 +255,7 @@ module.exports = {
     SMS_CONFIRM,
     SMS_ALREADY_SENT,
     SMS_FAILED,
+    SMS_DISABLED,
     CALLBACK_CONFIRM,
     TRANSFER_WAIT,
     TRANSFER_FAILED,

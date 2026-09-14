@@ -149,8 +149,6 @@ app.listen(PORT, () => {
         log(`   Health      → GET  http://localhost:${PORT}/health`);
     }
 
-    if (process.env.BOT_DRY_RUN === 'true') {
-        warn('Mode DRY-RUN actif — aucun SMS ne sera envoyé');
-    }
+    warn('SMS Twilio désactivé — aucun texto ne part (voix Twilio inchangée)');
     log('─'.repeat(58));
 });
