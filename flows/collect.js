@@ -23,10 +23,12 @@ const { getRoute }    = require('../config/routing');
 const { log, warn }   = require('../lib/logger');
 const session = require('../lib/session');
 const {
+    getCollectName,
     COLLECT_NAME_FALLBACK,
     COLLECT_PHONE,
+    SMS_CONFIRM,
     SMS_ALREADY_SENT,
-    SMS_DISABLED,
+    SMS_FAILED,
     getFollowUp,
 } = require('../config/messages');
 
@@ -37,11 +39,22 @@ function collectName(req, res) {
     const sess = session.get(callSid);
     const motif = resolveSmsMotif(sess.lastMotif || req.query.motif || 'autre', sess);
 
-    return res.type('text/xml').send(buildVoiceGather({
-        say:     `${SMS_DISABLED} ${getFollowUp({ motif, smsSent: false })}`,
-        action:  voiceUrl('sub', { motif }),
-        timeout: 6,
-    }));
+    if (session.get(callSid).smsSent) {
+        return res.type('text/xml').send(buildVoiceGather({
+            say:     `${SMS_ALREADY_SENT} ${getFollowUp({ motif, smsSent: true })}`,
+            action:  voiceUrl('sub', { motif }),
+            timeout: 6,
+        }));
+    }
+
+    const twiml = buildSpeechGather({
+        say:    getCollectName(motif),
+        action: voiceUrl('collect/phone', { motif }),
+        timeout: 5,
+    });
+
+    res.type('text/xml');
+    res.send(twiml);
 }
 
 // ─── Étape 2 : Numéro (si From n'est pas mobile) ─────────────────────────────
@@ -121,11 +134,10 @@ async function collectSave(req, res) {
 
     if (toPhone) {
         const result = await sendSms({ to: toPhone, body });
-        smsSent  = false;
-        smsError = result.error || result.reason || 'sms_disabled';
+        smsSent  = result.ok;
+        smsError = result.error || null;
     } else {
         warn(`collectSave — pas de numéro valide pour CallSid ${callSid}`);
-        smsError = 'sms_disabled';
     }
 
     await updateCall(callSid, {
@@ -140,7 +152,9 @@ async function collectSave(req, res) {
 
     if (smsSent) session.touch(callSid, { smsSent: true, callerName: name || sess.callerName || null });
 
-    const confirmText = `${SMS_DISABLED} ${getFollowUp({ motif, smsSent: false })}`;
+    const confirmText = smsSent
+        ? `${SMS_CONFIRM(name)} ${getFollowUp({ motif, smsSent: true })}`
+        : `${SMS_FAILED} ${getFollowUp({ motif, smsSent: false })}`;
     res.type('text/xml');
     res.send(buildVoiceGather({
         say:     confirmText,

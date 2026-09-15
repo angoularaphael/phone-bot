@@ -13,7 +13,7 @@ const { log, warn } = require('../lib/logger');
 const { chatCompletion, isAiEnabled } = require('../lib/llm');
 const { buildSystemPrompt } = require('../config/voice-prompt');
 const { classify, isCancelIntent } = require('../lib/classifier');
-const { getAnswer, ASK_REPEAT, SMS_DISABLED, getFollowUp, GOODBYE } = require('../config/messages');
+const { getAnswer, ASK_REPEAT, SMS_ALREADY_SENT, getFollowUp, GOODBYE } = require('../config/messages');
 const { planningReply, GYMS, correctStt, nearbyGymId, detectGyms } = require('../config/kb');
 const { wantsKids, fallbackFromKnowledge } = require('../config/knowledge-file');
 const session = require('../lib/session');
@@ -287,7 +287,10 @@ async function converse(req, res) {
 
     if (phase === 'after' && !spoken) {
         if (digit === '1') {
-            return res.send(gatherAfter(followUpSay(callSid)));
+            if (smsAlreadySent(callSid)) {
+                return res.send(gatherAfter(`${SMS_ALREADY_SENT} ${followUpSay(callSid)}`));
+            }
+            return res.send(buildRedirect(voiceUrl('collect/name', { motif: lastMotif(callSid) })));
         }
         if (digit === '*') {
             return res.send(buildRedirect(voiceUrl('menu')));
@@ -341,7 +344,10 @@ async function converse(req, res) {
         return res.send(buildRedirect(voiceUrl('bye')));
     }
     if (SMS_RE.test(question) && question.length < 50) {
-        return res.send(gatherAfter(`${SMS_DISABLED} ${followUpSay(callSid)}`));
+        if (smsAlreadySent(callSid)) {
+            return res.send(gatherAfter(`${SMS_ALREADY_SENT} ${followUpSay(callSid)}`));
+        }
+        return res.send(buildRedirect(voiceUrl('collect/name', { motif: lastMotif(callSid) })));
     }
     if (HUMAN_RE.test(question) && question.length < 60) {
         question = "L'appelant voulait parler à un conseiller. Réponds que tu peux l'aider maintenant et demande sa question concrète : planning, tarifs, essai, résiliation…";
