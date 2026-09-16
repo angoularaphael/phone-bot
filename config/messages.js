@@ -52,19 +52,12 @@ const ASK_REPEAT =
 const ASK_DTMF_HINT = MENU_REPEAT;
 
 const SUB_MENU =
-    `Si vous voulez recevoir un S.M.S. avec les informations et les liens utiles, appuyez sur la touche 1. ` +
-    `Pour revenir au menu principal, appuyez sur étoile. ` +
-    `Vous pouvez aussi me poser une autre question.`;
+    `Vous pouvez me poser une autre question. ` +
+    `Pour revenir au menu principal, appuyez sur étoile.`;
 
-const SUB_MENU_INSCRIPTION =
-    `Si vous voulez recevoir un S.M.S. avec les liens pour vous inscrire, appuyez sur la touche 1. ` +
-    `Pour revenir au menu principal, appuyez sur étoile. ` +
-    `Vous pouvez aussi me poser une autre question.`;
+const SUB_MENU_INSCRIPTION = SUB_MENU;
 
-const SUB_MENU_RESIL =
-    `Si vous voulez recevoir un S.M.S. avec le lien pour résilier ou gérer votre abonnement, appuyez sur la touche 1. ` +
-    `Pour revenir au menu principal, appuyez sur étoile. ` +
-    `Vous pouvez aussi me poser une autre question.`;
+const SUB_MENU_RESIL = SUB_MENU;
 
 const THINKING =
     `Un instant, je vérifie.`;

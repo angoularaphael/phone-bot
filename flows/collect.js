@@ -39,22 +39,11 @@ function collectName(req, res) {
     const sess = session.get(callSid);
     const motif = resolveSmsMotif(sess.lastMotif || req.query.motif || 'autre', sess);
 
-    if (session.get(callSid).smsSent) {
-        return res.type('text/xml').send(buildVoiceGather({
-            say:     `${SMS_ALREADY_SENT} ${getFollowUp({ motif, smsSent: true })}`,
-            action:  voiceUrl('sub', { motif }),
-            timeout: 6,
-        }));
-    }
-
-    const twiml = buildSpeechGather({
-        say:    getCollectName(motif),
-        action: voiceUrl('collect/phone', { motif }),
-        timeout: 5,
-    });
-
-    res.type('text/xml');
-    res.send(twiml);
+    return res.type('text/xml').send(buildVoiceGather({
+        say: `Je n'envoie plus de S.M.S. ${getFollowUp({ motif, smsSent: false })}`,
+        action: voiceUrl('sub', { motif }),
+        timeout: 6,
+    }));
 }
 
 // ─── Étape 2 : Numéro (si From n'est pas mobile) ─────────────────────────────

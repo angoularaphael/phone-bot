@@ -38,7 +38,7 @@ Dimanche : pas de cours publiés.
 - Résiliation : uniquement en ligne, Gérer mon abonnement puis Résilier, plus de 72 heures avant le prélèvement.
 - 29 euros toutes les 4 semaines (tous les 28 jours), jamais « par mois ». 259 euros l'année.
 - Essai adulte : 10 euros. Enfants : offerte, ils ne paient pas. Pas de créneau à choisir : venir 5 minutes avant le début du cours.
-- Pas d'URL à l'oral. Si un détail manque, tu le dis et tu proposes un S.M.S.
+- Pas d'URL à l'oral. Si un détail manque, tu le dis. Tu n'envoies pas de S.M.S.
 `.trim();
 
 function buildSystemPrompt(userText) {

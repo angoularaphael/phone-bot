@@ -1,13 +1,13 @@
 'use strict';
 
 /**
- * Après une réponse : parole = nouvelle question ; 1 SMS · * menu.
+ * Après une réponse : parole = nouvelle question ; * menu.
  */
 
 const { buildRedirect, buildVoiceGather } = require('../lib/twiml');
 const { voiceUrl } = require('../lib/url');
 const { speechOrDigit } = require('../lib/speech');
-const { getFollowUp, NO_INPUT, SMS_ALREADY_SENT } = require('../config/messages');
+const { getFollowUp, NO_INPUT } = require('../config/messages');
 const { resolveSmsMotif } = require('../lib/sms');
 const session = require('../lib/session');
 
@@ -28,15 +28,6 @@ function sub(req, res) {
     }
 
     switch (digit) {
-        case '1':
-            if (smsSent) {
-                return res.send(buildVoiceGather({
-                    say:     `${SMS_ALREADY_SENT} ${followUp}`,
-                    action:  voiceUrl('sub', { motif, gym }),
-                    timeout: 6,
-                }));
-            }
-            return res.send(buildRedirect(voiceUrl('collect/name', { motif })));
         case '*':
             return res.send(buildRedirect(voiceUrl('menu')));
         default: {
