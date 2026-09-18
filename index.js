@@ -88,10 +88,17 @@ app.post('/voice/salle',         salle);
 app.post('/voice/answer',        answer);
 app.post('/voice/sub',           sub);
 
-// Collecte coordonnées pour SMS
+// Ancienne collecte SMS appelant — refuse, le menu interne 99 envoie encore
 app.post('/voice/collect/name',  collectName);
 app.post('/voice/collect/phone', collectPhone);
 app.post('/voice/collect/save',  collectSave);
+
+// Textos entrants : ignorés, pas de réponse
+app.post('/sms', (req, res) => {
+    const from = req.body.From || '?';
+    log(`📱 SMS entrant ignoré — From: ${from}`);
+    res.type('text/xml').send('<Response></Response>');
+});
 
 // Actions
 app.post('/voice/callback',      callback);
@@ -126,6 +133,8 @@ app.get('/health', (req, res) => {
         dryRun:     process.env.BOT_DRY_RUN === 'true',
         ai:         process.env.USE_AI_REPLY !== 'false',
         transfer:   false,
+        smsPublic:  false,
+        smsInternal: true,
         baseUrl:    process.env.BASE_URL || '(non défini)',
         phone:      process.env.TWILIO_PHONE_NUMBER || '(non défini)',
     });
@@ -149,6 +158,7 @@ app.listen(PORT, () => {
         log(`   Health      → GET  http://localhost:${PORT}/health`);
     }
 
+    log('   SMS public  : coupé (sauf menu interne 99)');
     if (process.env.BOT_DRY_RUN === 'true') {
         warn('Mode DRY-RUN actif — aucun SMS ne sera envoyé');
     }

@@ -2,6 +2,7 @@
 
 /**
  * Après une réponse : parole = nouvelle question ; * menu.
+ * Pas de SMS public. Menu interne 99 inchangé.
  */
 
 const { buildRedirect, buildVoiceGather } = require('../lib/twiml');

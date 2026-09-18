@@ -67,7 +67,8 @@ module.exports = async function verify() {
     log(`   AI_PROVIDER     : ${process.env.AI_PROVIDER || 'gemini'}`);
     log(`   GEMINI_API_KEY  : ${Object.keys(process.env).some((k) => /^GEMINI_API_KEY/.test(k) && String(process.env[k] || '').startsWith('AIza')) ? '(défini)' : '⚠️  manquant — repli Groq'}`);
     log(`   GROQ_API_KEY    : ${process.env.GROQ_API_KEY ? '(défini)' : '⚠️  manquant'}`);
-    log(`   SMS             : ${process.env.TWILIO_PHONE_NUMBER || '⚠️  TWILIO_PHONE_NUMBER manquant'}`);
+    log(`   SMS public      : coupé`);
+    log(`   SMS interne 99  : ${process.env.TWILIO_PHONE_NUMBER || '⚠️  TWILIO_PHONE_NUMBER manquant'} → 07 62 64 14 73`);
     log(`   Transfert humain: désactivé`);
 
     // ── Routing ────────────────────────────────────────────────────
@@ -82,6 +83,7 @@ module.exports = async function verify() {
     if (BASE_URL) {
         log(`   Appel entrant (Voice URL) : POST ${BASE_URL}/voice`);
         log(`   Status callback           : POST ${BASE_URL}/voice/status`);
+        log(`   SMS entrant (ignoré)      : POST ${BASE_URL}/sms`);
     } else {
         warn('Définissez BASE_URL dans .env pour afficher les URLs de webhook');
     }

@@ -1,40 +1,18 @@
 'use strict';
 
 /**
- * Collecte des coordonnées pour l'envoi du SMS.
- *
- * Étape 1 — /voice/collect/name?motif=...
- *   Demande le prénom de l'appelant par reconnaissance vocale.
- *
- * Étape 2 — /voice/collect/phone?motif=...&name=...
- *   Si le numéro appelant (From) n'est pas un mobile évident,
- *   demande le numéro de téléphone via DTMF (10 chiffres).
- *   Sinon, saute directement à l'étape 3.
- *
- * Étape 3 — /voice/collect/save?motif=...&name=...
- *   Envoie le SMS et confirme.
+ * Ancienne collecte SMS pour l'appelant : plus d'envoi, quel que soit le menu.
+ * Les routes restent pour d'éventuels webhooks Twilio déjà configurés.
+ * Le menu interne 99 envoie toujours via lib/train-qa.js.
  */
 
-const { buildSpeechGather, buildGather, buildVoiceGather, buildRedirect } = require('../lib/twiml');
+const { buildVoiceGather } = require('../lib/twiml');
 const { voiceUrl }    = require('../lib/url');
-const { sendSms, buildSmsBody, extractFirstName, resolveSmsMotif } = require('../lib/sms');
-const { updateCall }  = require('../lib/tracker');
-const { getRoute }    = require('../config/routing');
-const { log, warn }   = require('../lib/logger');
+const { resolveSmsMotif } = require('../lib/sms');
+const { getFollowUp } = require('../config/messages');
 const session = require('../lib/session');
-const {
-    getCollectName,
-    COLLECT_NAME_FALLBACK,
-    COLLECT_PHONE,
-    SMS_CONFIRM,
-    SMS_ALREADY_SENT,
-    SMS_FAILED,
-    getFollowUp,
-} = require('../config/messages');
 
-// ─── Étape 1 : Prénom ────────────────────────────────────────────────────────
-
-function collectName(req, res) {
+function refuseSms(req, res) {
     const callSid = req.body.CallSid;
     const sess = session.get(callSid);
     const motif = resolveSmsMotif(sess.lastMotif || req.query.motif || 'autre', sess);
@@ -46,128 +24,16 @@ function collectName(req, res) {
     }));
 }
 
-// ─── Étape 2 : Numéro (si From n'est pas mobile) ─────────────────────────────
+function collectName(req, res) {
+    return refuseSms(req, res);
+}
 
 function collectPhone(req, res) {
-    const motif  = req.query.motif || 'autre';
-    const callSid = req.body.CallSid;
-    const name   = extractFirstName(req.body.SpeechResult || '');
-    const caller = req.body.From || '';
-
-    if (name) session.touch(callSid, { callerName: name });
-
-    if (!name && req.query.retry !== '1') {
-        const twiml = buildSpeechGather({
-            say:    COLLECT_NAME_FALLBACK,
-            action: voiceUrl('collect/phone', { motif, retry: '1' }),
-            timeout: 5,
-        });
-        return res.type('text/xml').send(twiml);
-    }
-
-    const savedName = name || session.get(callSid).callerName || '';
-
-    // Si le numéro From ressemble à un mobile (commence par +336, +337, 06, 07),
-    // on saute la collecte du numéro et on envoie directement.
-    if (isMobile(caller)) {
-        const params = new URLSearchParams({ motif, name: savedName, phone: caller });
-        return res.type('text/xml').send(
-            buildRedirect(`${voiceUrl('collect/save')}?${params}`)
-        );
-    }
-
-    // Sinon, demande le numéro
-    const twiml = buildGather({
-        say:       COLLECT_PHONE,
-        action:    voiceUrl('collect/save', { motif, name: savedName }),
-        numDigits: 10,
-        timeout:   15,
-    });
-
-    res.type('text/xml');
-    res.send(twiml);
+    return refuseSms(req, res);
 }
 
-// ─── Étape 3 : Envoi SMS + confirmation ──────────────────────────────────────
-
-async function collectSave(req, res) {
-    const callSid  = req.body.CallSid;
-    const sess     = session.get(callSid);
-    const name     = (sess.callerName || req.query.name || '').trim();
-    const caller   = req.body.From     || '';
-    const motif    = resolveSmsMotif(sess.lastMotif || req.query.motif || 'autre', sess);
-
-    if (session.get(callSid).smsSent) {
-        return res.type('text/xml').send(buildVoiceGather({
-            say:     `${SMS_ALREADY_SENT} ${getFollowUp({ motif, smsSent: true })}`,
-            action:  voiceUrl('sub', { motif }),
-            timeout: 6,
-        }));
-    }
-
-    // Numéro cible : priorité au DTMF saisi, sinon numéro appelant
-    const rawPhone  = (req.body.Digits || req.query.phone || caller || '').replace(/\s/g, '');
-    const toPhone   = normalizePhone(rawPhone);
-
-    const route = getRoute(motif);
-    const link  = route.smsLink || '';
-
-    const body = buildSmsBody(motif, name || null, link, {
-        gym: sess.lastGym || req.query.gym || null,
-        lastQuestion: sess.lastQuestion || '',
-        messages: sess.messages || [],
-    });
-
-    let smsSent = false;
-    let smsError = null;
-
-    if (toPhone) {
-        const result = await sendSms({ to: toPhone, body });
-        smsSent  = result.ok;
-        smsError = result.error || null;
-    } else {
-        warn(`collectSave — pas de numéro valide pour CallSid ${callSid}`);
-    }
-
-    await updateCall(callSid, {
-        callerName:  name   || null,
-        callerPhone: toPhone || null,
-        smsSent,
-        status: 'completed',
-        notes:  smsError ? `sms_error:${smsError}` : null,
-    });
-
-    log(`📋 Collecte — CallSid: ${callSid}  Prénom: ${name || '(vide)'}  Tel: ${toPhone || '?'}  SMS: ${smsSent}`);
-
-    if (smsSent) session.touch(callSid, { smsSent: true, callerName: name || sess.callerName || null });
-
-    const confirmText = smsSent
-        ? `${SMS_CONFIRM(name)} ${getFollowUp({ motif, smsSent: true })}`
-        : `${SMS_FAILED} ${getFollowUp({ motif, smsSent: false })}`;
-    res.type('text/xml');
-    res.send(buildVoiceGather({
-        say:     confirmText,
-        action:  voiceUrl('sub', { motif }),
-        timeout: 10,
-    }));
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function isMobile(number) {
-    if (!number) return false;
-    const clean = number.replace(/[\s\-().]/g, '');
-    return /^\+336|^\+337|^06|^07/.test(clean);
-}
-
-function normalizePhone(raw) {
-    if (!raw) return null;
-    const digits = raw.replace(/\D/g, '');
-    if (digits.length === 9)  return `+33${digits}`;           // 6XXXXXXXX
-    if (digits.length === 10) return `+33${digits.slice(1)}`;  // 0XXXXXXXXX
-    if (digits.length === 11 && digits.startsWith('33')) return `+${digits}`;
-    if (digits.length === 12 && digits.startsWith('33')) return `+${digits}`;
-    return raw.startsWith('+') ? raw : null;
+function collectSave(req, res) {
+    return refuseSms(req, res);
 }
 
 module.exports = { collectName, collectPhone, collectSave };

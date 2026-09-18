@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Réponse vocale figée + sous-menu SMS.
+ * Réponse vocale figée + sous-menu (question / étoile).
  */
 
 const { buildVoiceGather } = require('../lib/twiml');
