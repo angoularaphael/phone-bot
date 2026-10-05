@@ -29,7 +29,8 @@ assert.match(telnyxXml, /transcriptionEngine="Deepgram"/);
 assert.match(telnyxXml, /model="deepgram\/nova-2"/);
 
 const brand = loadTwiml('twilio').buildHangup('Je suis David de Boxing Center.');
-assert.match(brand, /lang xml:lang="en-US"/);
+assert.match(brand, /phoneme alphabet="ipa"/);
 assert.match(brand, /Boxing Center/);
+assert.doesNotMatch(brand, /xml:lang="en-US"/);
 
 console.log('ok — twiml provider telnyx/twilio');
