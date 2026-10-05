@@ -123,7 +123,9 @@ SMS interne (menu 99) reste sur Twilio pour l’instant.
 | `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | Historique appels |
 | `LINK_GERER_ABO` | Lien SMS résiliation |
 | `BOT_VOICE` | Défaut `Polly.Remi-Neural` (homme, français). Option : `Polly.Rémi-Generative` |
-| `BOT_SPEECH_RATE` | Débit David. Défaut `120%` (un peu plus vite). `100%` = normal, `130%` = encore plus rapide |
+| `BOT_SPEECH_RATE` | Débit par défaut. `110%` |
+| `BOT_SPEECH_RATE_FAST` | Accueil, options 2 et 3. Défaut `112%` |
+| `BOT_SPEECH_RATE_OFFERS` | Option 1. Défaut `105%` |
 | `BOT_DRY_RUN` | `true` = pas de SMS réel |
 | `USE_AI_REPLY` | `false` = pas de LLM même en secours parole |
 

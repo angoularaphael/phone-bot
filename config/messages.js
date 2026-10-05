@@ -5,9 +5,9 @@
  * Voix : Polly.Remi-Neural (homme, français)
  */
 
-const RATE_FAST = process.env.BOT_SPEECH_RATE_FAST || '135%';
-const RATE_OFFERS = process.env.BOT_SPEECH_RATE_OFFERS || '115%';
-const RATE_DEFAULT = process.env.BOT_SPEECH_RATE || '125%';
+const RATE_FAST = process.env.BOT_SPEECH_RATE_FAST || '112%';
+const RATE_OFFERS = process.env.BOT_SPEECH_RATE_OFFERS || '105%';
+const RATE_DEFAULT = process.env.BOT_SPEECH_RATE || '110%';
 
 const WELCOME =
     `Bonjour, je suis David de Boxing Center. ` +
