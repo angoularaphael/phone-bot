@@ -1,35 +1,20 @@
 'use strict';
 
 /**
- * Réponse vocale figée + sous-menu (question / étoile).
+ * Ancien parcours long désactivé — recentre vers les 3 options.
  */
 
-const { buildVoiceGather } = require('../lib/twiml');
-const { voiceUrl }         = require('../lib/url');
-const { getAnswer, getFollowUp } = require('../config/messages');
-const { SPOKEN_PLANNING } = require('../config/kb');
-const session = require('../lib/session');
+const { buildRedirect } = require('../lib/twiml');
+const { voiceUrl } = require('../lib/url');
 
 function answer(req, res) {
-    const motif = req.query.motif || 'infos_pratiques';
-    const gym   = req.query.gym || '';
-    const callSid = req.body.CallSid;
-    const smsSent = !!session.get(callSid).smsSent;
-    const body  = (gym && SPOKEN_PLANNING[gym]) ? SPOKEN_PLANNING[gym] : getAnswer(motif);
-
-    session.touch(callSid, {
-        lastMotif: motif,
-        lastGym: gym || session.get(callSid).lastGym || null,
-        lastQuestion: gym ? `planning ${gym}` : (session.get(callSid).lastQuestion || motif),
-    });
-
-    const twiml = buildVoiceGather({
-        say:     `${body} ${getFollowUp({ motif, smsSent })}`,
-        action:  voiceUrl('sub', { motif, gym }),
-        timeout: 6,
-    });
+    const motif = req.query.motif || '';
     res.type('text/xml');
-    res.send(twiml);
+    if (motif === 'administratif') return res.send(buildRedirect(voiceUrl('option3')));
+    if (motif === 'inscription' || motif === 'tarifs' || motif === 'seance_essai') {
+        return res.send(buildRedirect(voiceUrl('option1')));
+    }
+    return res.send(buildRedirect(voiceUrl('option2')));
 }
 
 module.exports = { answer };

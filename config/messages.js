@@ -1,223 +1,160 @@
 'use strict';
 
 /**
- * Messages vocaux — David, Boxing Center
+ * Messages vocaux — David, Boxing Center (brief coach : court, 3 options, raccroche).
  * Voix : Polly.Remi-Neural (homme, français)
- *
- * Phrases courtes. Points pour les pauses TTS.
- * 29 euros toutes les 4 semaines : jamais « par mois ».
  */
 
-const INTRO =
-    `Bonjour. Je suis David, de Boxing Center. ` +
-    `C'est moi qui vais vous éclairer sur vos besoins durant cet appel.`;
+const RATE_FAST = process.env.BOT_SPEECH_RATE_FAST || '135%';
+const RATE_OFFERS = process.env.BOT_SPEECH_RATE_OFFERS || '115%';
+const RATE_DEFAULT = process.env.BOT_SPEECH_RATE || '125%';
 
-const MENU_CHOICES =
-    `Vous souhaitez vous inscrire, ou obtenir des informations sur nos formules et tarifs : appuyez sur la touche 1. ` +
-    `Vous souhaitez des informations sur les plannings, les horaires d'ouverture, les activités et les disciplines : appuyez sur la touche 2. ` +
-    `Vous souhaitez gérer votre abonnement : appuyez sur la touche 3. ` +
-    `Pour tout autre motif, appuyez sur la touche 4. ` +
-    `Vous pouvez aussi me poser votre question.`;
+const WELCOME =
+    `Bonjour, je suis David de Boxing Center. ` +
+    `Pour les inscriptions et offres d'abonnement, tapez 1. ` +
+    `Pour les activités et plannings, tapez 2. ` +
+    `Pour gérer, modifier ou résilier votre abonnement, tapez 3.`;
 
-const WELCOME = `${INTRO} ${MENU_CHOICES}`;
-
-const MENU = MENU_CHOICES;
+const MENU = WELCOME;
 
 const MENU_REPEAT =
-    `Je n'ai pas compris. ` + MENU_CHOICES;
+    `Je n'ai pas compris. ` + WELCOME;
 
-const PRATIQUE_MENU =
-    `Pour les horaires d'ouverture, appuyez sur 1. ` +
-    `Pour le planning des cours, appuyez sur 2. ` +
-    `Pour les activités et disciplines, appuyez sur 3. ` +
-    `Retour au menu, étoile.`;
+const OPTION1_OFFERS =
+    `Voici nos offres. ` +
+    `Abonnement sans engagement : 29 euros toutes les 4 semaines, prélèvement tous les 28 jours. ` +
+    `Offre annuelle : 259 euros pour 12 mois. ` +
+    `L'inscription se fait en ligne sur la boutique Boxing Center. ` +
+    `Séance d'essai adulte : 10 euros. Pour un enfant, l'essai est offert.`;
 
-const PRATIQUE_MENU_REPEAT =
-    `Je n'ai pas saisi. ` + PRATIQUE_MENU;
+const OPTION1_ASK_SMS =
+    `Souhaitez-vous recevoir le lien de la boutique Boxing Center par S.M.S. pour vous inscrire ? ` +
+    `Tapez 1 pour oui, 2 pour non.`;
 
-const SALLE_MENU =
-    `Quelle salle ? ` +
-    `Appuyez sur 1 pour Minimes. ` +
-    `2 pour Portet. ` +
-    `3 pour Ramonville. ` +
-    `4 pour Saint-Cyprien. ` +
-    `5 pour États-Unis.`;
+const OPTION1_SMS_YES =
+    `Merci pour votre appel. Vous allez recevoir le lien par S.M.S. À bientôt chez Boxing Center.`;
 
-const SALLE_MENU_REPEAT =
-    `Je n'ai pas saisi. ` + SALLE_MENU;
+const OPTION1_SMS_NO =
+    `Très bien, merci pour votre appel. Vous pouvez retrouver nos offres directement sur la boutique Boxing Center. À bientôt.`;
 
-const ASK_REPEAT =
-    `Je n'ai pas bien entendu. Posez votre question, ou appuyez sur une touche.`;
+const OPTION2_BODY =
+    `Toutes les informations relatives aux activités, aux disciplines et aux plannings Boxing Center ` +
+    `sont disponibles sur notre site internet : boxingcenter.fr. ` +
+    `Souhaitez-vous recevoir le lien par S.M.S. ? Tapez 1 pour oui, 2 pour non.`;
 
+const OPTION2_SMS_YES =
+    `Merci, le lien va vous être envoyé par S.M.S. Bonne journée.`;
+
+const OPTION2_SMS_NO =
+    `Très bien, vous pouvez consulter toutes les informations sur boxingcenter.fr. Merci et bonne journée.`;
+
+const OPTION3_BODY =
+    `Vous pouvez gérer votre abonnement depuis la page Gérer mon abonnement, présente sur la boutique Boxing Center. ` +
+    `Toutes les demandes relatives à la gestion, la modification ou la résiliation de votre abonnement ` +
+    `se font uniquement depuis cette page. Merci et au revoir.`;
+
+const BLOCKED_MSG =
+    `Vous avez appelé plusieurs fois notre standard en peu de temps. ` +
+    `Merci de consulter nos informations sur boxingcenter.fr ou sur la boutique Boxing Center. ` +
+    `Vous pourrez rappeler ultérieurement.`;
+
+const GOODBYE =
+    `Merci d'avoir appelé Boxing Center. À bientôt.`;
+
+const ASK_REPEAT = MENU_REPEAT;
 const ASK_DTMF_HINT = MENU_REPEAT;
+const NO_INPUT = `Je n'ai pas reçu de touche. `;
+const THINKING = `Un instant.`;
+const HUMAN_STEER = WELCOME;
+const FOLLOW_UP = GOODBYE;
+const FOLLOW_UP_REPEAT = GOODBYE;
+const FOLLOW_UP_AFTER_SMS = GOODBYE;
+const SUB_MENU = GOODBYE;
+const SUB_MENU_INSCRIPTION = GOODBYE;
+const SUB_MENU_RESIL = GOODBYE;
+const OUTRO = GOODBYE;
+const INTRO = WELCOME;
+const MENU_CHOICES = WELCOME;
 
-const SUB_MENU =
-    `Vous pouvez me poser une autre question. ` +
-    `Pour revenir au menu principal, appuyez sur étoile.`;
+const PRATIQUE_MENU = OPTION2_BODY;
+const PRATIQUE_MENU_REPEAT = OPTION2_BODY;
+const SALLE_MENU = OPTION2_BODY;
+const SALLE_MENU_REPEAT = OPTION2_BODY;
 
-const SUB_MENU_INSCRIPTION = SUB_MENU;
+const ANSWERS = {
+    inscription: OPTION1_OFFERS,
+    administratif: OPTION3_BODY,
+    infos_pratiques: OPTION2_BODY,
+    planning: OPTION2_BODY,
+    disciplines: OPTION2_BODY,
+    autre: GOODBYE,
+};
 
-const SUB_MENU_RESIL = SUB_MENU;
+function getAnswer(motif) {
+    return ANSWERS[motif] || GOODBYE;
+}
 
-const THINKING =
-    `Un instant, je vérifie.`;
-
-const FOLLOW_UP_AFTER_SMS =
-    `Vous pouvez me poser une autre question. ` +
-    `Pour revenir au menu principal, appuyez sur étoile.`;
-
-const FOLLOW_UP = SUB_MENU;
-
-const FOLLOW_UP_REPEAT = SUB_MENU;
+function getFollowUp() {
+    return '';
+}
 
 function isInscriptionMotif(motif) {
     return motif === 'inscription' || motif === 'tarifs' || motif === 'seance_essai';
 }
 
-function getFollowUp({ motif, smsSent } = {}) {
-    if (smsSent) return FOLLOW_UP_AFTER_SMS;
-    if (motif === 'administratif') return SUB_MENU_RESIL;
-    if (isInscriptionMotif(motif)) return SUB_MENU_INSCRIPTION;
-    return SUB_MENU;
+function getCollectName() {
+    return '';
 }
 
-const HUMAN_STEER =
-    `Je peux vous répondre. ` + MENU_CHOICES;
-
-const ANSWERS = {
-    infos_pratiques:
-        `Ouvert du lundi au samedi, de 10 heures à 21 heures 30. ` +
-        `Fermé le dimanche. ` +
-        `Cinq salles à Toulouse et Portet.`,
-
-    inscription:
-        `Voici nos formules. ` +
-        `Vous pouvez vous abonner sans engagement pour 29 euros toutes les 4 semaines. ` +
-        `Le prélèvement n'est pas mensuel : il a lieu tous les 28 jours, et vous pouvez arrêter à tout moment. ` +
-        `Si vous venez toute l'année, l'offre à 259 euros pour 12 mois est plus avantageuse. ` +
-        `L'inscription se fait en ligne, en quelques minutes. ` +
-        `Si vous préférez d'abord découvrir la salle, une séance d'essai adulte est possible à 10 euros, à réserver sur internet. Il n'y a pas de créneau à choisir : venez 5 minutes avant le début du cours. Pour un enfant, l'essai est offert.`,
-
-    seance_essai:
-        `Pour un adulte, la séance d'essai est à 10 euros, à réserver sur internet. Vous choisissez la salle et l'activité. Il n'y a pas de créneau à réserver : venez 5 minutes avant le début du cours. Pour un enfant, l'essai est offert.`,
-
-    planning:
-        `Pour le planning, choisissez d'abord la salle.`,
-
-    disciplines:
-        `Boxe anglaise, pieds-poings, MMA, grappling, fitness. ` +
-        `Cours femmes et enfants, selon la salle. ` +
-        `Pour les horaires précis, prenez le planning.`,
-
-    competition:
-        `Les cours compétiteurs sont réservés aux confirmés. ` +
-        `Pour découvrir, prenez un cours loisirs, tous niveaux.`,
-
-    administratif:
-        `Pour un abonnement sans engagement, la résiliation se fait uniquement en ligne. ` +
-        `Allez sur Gérer mon abonnement, puis Résilier. ` +
-        `Il faut le faire plus de 72 heures avant le prochain prélèvement. ` +
-        `La facture et le contrat se trouvent dans le même espace en ligne.`,
-
-    autre:
-        `Dites-moi votre question, je vous écoute.`,
-};
-
-const ANSWER_ALIASES = {
-    horaires:     'infos_pratiques',
-    tarifs:       'inscription',
-    activites:    'disciplines',
-};
-
-function getAnswer(motif) {
-    const key = ANSWER_ALIASES[motif] || motif;
-    return ANSWERS[key] || ANSWERS.autre;
-}
-
-const COLLECT_NAME =
-    `Très bien. Je vais vous envoyer un S.M.S. avec les informations. ` +
-    `Dites votre prénom après le signal, pour que le message soit à votre nom.`;
-
-const COLLECT_NAME_INSCRIPTION =
-    `Très bien. Je vais vous envoyer un S.M.S. avec les liens pour vous inscrire. ` +
-    `Dites votre prénom après le signal, pour que le message soit à votre nom.`;
-
-const COLLECT_NAME_RESIL =
-    `Très bien. Je vais vous envoyer un S.M.S. avec le lien pour résilier ou gérer votre abonnement. ` +
-    `Dites votre prénom après le signal, pour que le message soit à votre nom.`;
-
-const COLLECT_NAME_FALLBACK =
-    `Je n'ai pas bien entendu. Dites seulement votre prénom après le signal.`;
-
-function getCollectName(motif) {
-    if (motif === 'administratif') return COLLECT_NAME_RESIL;
-    if (isInscriptionMotif(motif)) return COLLECT_NAME_INSCRIPTION;
-    return COLLECT_NAME;
-}
-
-const COLLECT_PHONE =
-    `Sur quel numéro souhaitez-vous recevoir le S.M.S. ? Tapez les 10 chiffres de votre téléphone.`;
-
-const SMS_CONFIRM =
-    (name) => `C'est envoyé${name ? `, ${name}` : ''}. Vous allez le recevoir dans quelques instants.`;
-
-const SMS_ALREADY_SENT =
-    `Le S.M.S. a déjà été envoyé. Vous n'avez rien à faire de plus de ce côté.`;
-
-const SMS_FAILED =
-    `Je n'ai pas réussi à envoyer le S.M.S. Vous pouvez réessayer en appuyant sur la touche 1.`;
-
-const CALLBACK_CONFIRM =
-    `C'est noté. On vous rappelle du lundi au samedi.`;
-
-const TRANSFER_WAIT = HUMAN_STEER;
-
-const TRANSFER_FAILED =
-    `Je reste avec vous. Appuyez sur une touche du menu.`;
-
-const GOODBYE =
-    `Merci d'avoir appelé Boxing Center. À bientôt.`;
-
-const OUTRO = SUB_MENU;
-
-const NO_INPUT =
-    `Je n'ai pas reçu de touche. `;
+const COLLECT_NAME = '';
+const COLLECT_NAME_INSCRIPTION = '';
+const COLLECT_NAME_RESIL = '';
+const COLLECT_NAME_FALLBACK = '';
+const COLLECT_PHONE = '';
+const SMS_CONFIRM = () => OPTION1_SMS_YES;
+const SMS_ALREADY_SENT = OPTION1_SMS_YES;
+const SMS_FAILED = `Je n'ai pas réussi à envoyer le S.M.S. Merci de consulter la boutique Boxing Center.`;
+const CALLBACK_CONFIRM = GOODBYE;
+const TRANSFER_WAIT = WELCOME;
+const TRANSFER_FAILED = GOODBYE;
 
 const TRAIN_HUB =
     `Mode interne. Pour poser une question, appuyez sur 1. ` +
     `Pour enregistrer la réponse, appuyez sur 2. ` +
     `Pour quitter, appuyez sur étoile.`;
+const TRAIN_ASK_Q = `Posez la question après le signal.`;
+const TRAIN_ASK_R = `Donnez la réponse après le signal.`;
+const TRAIN_NEED_Q = `Enregistrez d'abord la question. Appuyez sur 1.`;
+const TRAIN_Q_OK = `Question notée. Appuyez sur 2 pour la réponse.`;
+const TRAIN_SMS_OK = `Le S.M.S. est parti. Pour une autre paire, appuyez sur 1. Étoile pour le menu.`;
+const TRAIN_SMS_FAIL = `Le S.M.S. n'est pas parti. Appuyez sur 2 pour réessayer, ou étoile pour quitter.`;
+const TRAIN_MISS = `Je n'ai pas entendu. `;
+const TRAIN_PHONE = `Tapez les 10 chiffres du mobile qui doit recevoir le S.M.S.`;
 
-const TRAIN_ASK_Q =
-    `Posez la question après le signal.`;
-
-const TRAIN_ASK_R =
-    `Donnez la réponse après le signal.`;
-
-const TRAIN_NEED_Q =
-    `Enregistrez d'abord la question. Appuyez sur 1.`;
-
-const TRAIN_Q_OK =
-    `Question notée. Appuyez sur 2 pour la réponse.`;
-
-const TRAIN_SMS_OK =
-    `Le S.M.S. est parti. Pour une autre paire, appuyez sur 1. Étoile pour le menu.`;
-
-const TRAIN_SMS_FAIL =
-    `Le S.M.S. n'est pas parti. Appuyez sur 2 pour réessayer, ou étoile pour quitter.`;
-
-const TRAIN_MISS =
-    `Je n'ai pas entendu. `;
-
-const TRAIN_PHONE =
-    `Tapez les 10 chiffres du mobile qui doit recevoir le S.M.S.`;
+const ANSWER_ALIASES = {
+    horaires: 'infos_pratiques',
+    tarifs: 'inscription',
+    activites: 'disciplines',
+};
 
 module.exports = {
+    RATE_FAST,
+    RATE_OFFERS,
+    RATE_DEFAULT,
     WELCOME,
     INTRO,
     MENU_CHOICES,
     MENU,
     MENU_REPEAT,
+    OPTION1_OFFERS,
+    OPTION1_ASK_SMS,
+    OPTION1_SMS_YES,
+    OPTION1_SMS_NO,
+    OPTION2_BODY,
+    OPTION2_SMS_YES,
+    OPTION2_SMS_NO,
+    OPTION3_BODY,
+    BLOCKED_MSG,
     PRATIQUE_MENU,
     PRATIQUE_MENU_REPEAT,
     SALLE_MENU,

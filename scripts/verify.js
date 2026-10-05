@@ -110,7 +110,7 @@ module.exports = async function verify() {
     log(`   AI_PROVIDER     : ${process.env.AI_PROVIDER || 'gemini'}`);
     log(`   GEMINI_API_KEY  : ${Object.keys(process.env).some((k) => /^GEMINI_API_KEY/.test(k) && String(process.env[k] || '').startsWith('AIza')) ? '(defini)' : 'manquant — repli Groq'}`);
     log(`   GROQ_API_KEY    : ${process.env.GROQ_API_KEY ? '(defini)' : 'manquant'}`);
-    log(`   SMS public      : coupe`);
+    log(`   SMS public      : options 1-2 (boutique / site)`);
     log(`   SMS interne 99  : ${twilioConfigured() ? `${process.env.TWILIO_PHONE_NUMBER} -> 07 62 64 14 73` : 'Twilio requis'}`);
     log(`   Transfert humain: desactive`);
 

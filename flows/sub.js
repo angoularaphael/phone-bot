@@ -1,46 +1,15 @@
 'use strict';
 
 /**
- * Après une réponse : parole = nouvelle question ; * menu.
- * Pas de SMS public. Menu interne 99 inchangé.
+ * Sous-menu désactivé — raccroche (brief : pas de conversation longue).
  */
 
-const { buildRedirect, buildVoiceGather } = require('../lib/twiml');
-const { voiceUrl } = require('../lib/url');
-const { speechOrDigit } = require('../lib/speech');
-const { getFollowUp, NO_INPUT } = require('../config/messages');
-const { resolveSmsMotif } = require('../lib/sms');
-const session = require('../lib/session');
+const { buildHangup } = require('../lib/twiml');
+const { GOODBYE, RATE_FAST } = require('../config/messages');
 
 function sub(req, res) {
-    const { digit, spoken } = speechOrDigit(req);
-    const gym = req.query.gym || '';
-    const callSid = req.body.CallSid;
-    const sess = session.get(callSid);
-    const motif = resolveSmsMotif(sess.lastMotif || req.query.motif || 'autre', sess);
-    const smsSent = !!session.get(callSid).smsSent;
-    const followUp = getFollowUp({ motif, smsSent });
-
     res.type('text/xml');
-
-    if (spoken) {
-        const { converse } = require('./converse');
-        return converse(req, res);
-    }
-
-    switch (digit) {
-        case '*':
-            return res.send(buildRedirect(voiceUrl('menu')));
-        default: {
-            const { tryOpenTrain } = require('./train');
-            if (tryOpenTrain(digit, res)) return;
-            return res.send(buildVoiceGather({
-                say:     NO_INPUT + followUp,
-                action:  voiceUrl('sub', { motif, gym }),
-                timeout: 6,
-            }));
-        }
-    }
+    res.send(buildHangup(GOODBYE, RATE_FAST));
 }
 
 module.exports = { sub };

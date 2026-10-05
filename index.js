@@ -37,6 +37,9 @@ const { welcome }                            = require('./flows/welcome');
 const { converse }                           = require('./flows/converse');
 const { menu }                               = require('./flows/menu');
 const { dispatch }                           = require('./flows/dispatch');
+const { option1 }                            = require('./flows/option1');
+const { option2 }                            = require('./flows/option2');
+const { option3 }                            = require('./flows/option3');
 const { salle }                              = require('./flows/salle');
 const { pratique }                           = require('./flows/pratique');
 const { answer }                             = require('./flows/answer');
@@ -79,13 +82,14 @@ app.use('/audio', express.static(path.join(__dirname, 'assets')));
 app.post('/voice',               welcome);
 app.post('/voice/converse',      converse);
 
-// Navigation (secours DTMF / reprise)
 app.post('/voice/menu',          menu);
 app.post('/voice/dispatch',      dispatch);
+app.post('/voice/option1',       option1);
+app.post('/voice/option2',       option2);
+app.post('/voice/option3',       option3);
 app.post('/voice/pratique',      pratique);
 app.post('/voice/salle',         salle);
 
-// Réponse vocale par motif + sous-menu
 app.post('/voice/answer',        answer);
 app.post('/voice/sub',           sub);
 
@@ -134,7 +138,7 @@ app.get('/health', (req, res) => {
         dryRun:     process.env.BOT_DRY_RUN === 'true',
         ai:         process.env.USE_AI_REPLY !== 'false',
         transfer:   false,
-        smsPublic:  false,
+        smsPublic:  'options_1_2',
         smsInternal: true,
         baseUrl:    process.env.BASE_URL || '(non défini)',
         phone:      voicePhoneNumber() || '(non défini)',
@@ -160,7 +164,7 @@ app.listen(PORT, () => {
     }
 
     log(`   Numero      : ${voicePhoneNumber() || '(non défini)'}`);
-    log('   SMS public  : coupé (sauf menu interne 99)');
+    log('   SMS         : options 1 et 2 uniquement (pas d option 3)');
     if (process.env.BOT_DRY_RUN === 'true') {
         warn('Mode DRY-RUN actif — aucun SMS ne sera envoyé');
     }

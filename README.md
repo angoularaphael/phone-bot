@@ -1,7 +1,7 @@
 # Boxing Center — Phone Bot
 
 Bot téléphonique de la ligne principale Boxing Center (09 39 03 67 48).
-Gère les appels via **Telnyx** (cible) ou **Twilio** (secours) : **David** (voix homme **Polly.Remi-Neural**), menu à touches, SMS interne, demande de rappel.
+**David** — standard court (brief coach) : 3 touches, SMS options 1–2, raccrochage obligatoire, anti-abus.
 
 **Aucun transfert vers un humain.** Le bot lit des réponses courtes (horaires, tarifs, planning par salle, résiliation).
 
@@ -11,14 +11,12 @@ Gère les appels via **Telnyx** (cible) ou **Twilio** (secours) : **David** (voi
 
 | Feature | Détail |
 |---|---|
-| Accueil | David + menu 4 touches (texte coach) |
-| Touche 1 | Inscription, formules et tarifs (29 € / 4 semaines) |
-| Touche 2 | Planning, horaires, disciplines → sous-menu |
-| Touche 3 | Gérer l'abonnement / facture |
-| Touche 4 | Autre motif (question, SMS, rappel) |
-| Après une réponse | 1 SMS · 2 rappel · * menu · ou une nouvelle question |
-| Parole | David écoute (STT) et répond (Gemini, repli Groq) |
-| Supabase | Historique d'appels |
+| Accueil | Message court, 3 touches uniquement |
+| Touche 1 | Offres (posé) → SMS boutique oui/non → raccroche |
+| Touche 2 | Site activités/plannings (rapide) → SMS oui/non → raccroche |
+| Touche 3 | Gérer mon abonnement (très rapide) → raccroche, **pas de SMS** |
+| Anti-abus | 3 appels / 30 min → blocage 24 h |
+| Conversation libre | Désactivée |
 
 ---
 
