@@ -3,8 +3,8 @@
 /**
  * Boxing Center — Phone Bot
  * ═══════════════════════════════════════════════════════════════
- *  node index.js            → démarre le serveur HTTP (webhooks Twilio)
- *  node index.js --verify   → vérifie les connexions (Twilio + Supabase)
+ *  node index.js            → démarre le serveur HTTP (webhooks voix)
+ *  node index.js --verify   → vérifie les connexions (Telnyx/Twilio + Supabase)
  *  node index.js --report   → rapport des appels et demandes de rappel
  *  node index.js --dev      → serveur avec logs détaillés
  * ═══════════════════════════════════════════════════════════════
@@ -15,6 +15,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const { log, warn, err } = require('./lib/logger');
+const { voiceProvider, voicePhoneNumber } = require('./lib/provider');
 
 // ─── Flags CLI ────────────────────────────────────────────────────────────────
 
@@ -62,7 +63,7 @@ if (args.has('--dev') || process.env.DEBUG === 'true') {
         const preview = keys.length ? JSON.stringify(req.body) : '{}';
         log(`→ ${req.method} ${req.path}  ct: ${ct}  body: ${preview}`);
         if (req.method === 'POST' && keys.length === 0) {
-            warn(`POST ${req.path} sans corps — attendu application/x-www-form-urlencoded (Twilio)`);
+            warn(`POST ${req.path} sans corps — attendu application/x-www-form-urlencoded (voix)`);
         }
         next();
     });
@@ -72,9 +73,9 @@ if (args.has('--dev') || process.env.DEBUG === 'true') {
 
 app.use('/audio', express.static(path.join(__dirname, 'assets')));
 
-// ─── Routes vocales (webhooks Twilio) ─────────────────────────────────────────
+// ─── Routes vocales (webhooks Telnyx TeXML / Twilio TwiML) ───────────────────
 
-// Appel entrant — URL à configurer dans Twilio Console
+// Appel entrant — URL à configurer dans la console du fournisseur voix
 app.post('/voice',               welcome);
 app.post('/voice/converse',      converse);
 
@@ -112,7 +113,7 @@ app.post('/voice/train/hub',     trainHub);
 app.post('/voice/train/capture',  trainCapture);
 app.post('/voice/train/send',   sendAndConfirm);
 
-// Callback de statut Twilio (durée, fin d'appel)
+// Callback de statut (durée, fin d'appel)
 app.post('/voice/status',        statusCallback);
 
 // ─── Health check ─────────────────────────────────────────────────────────────
@@ -125,7 +126,7 @@ app.use('/voice', (req, res, next) => { if (req.method === 'POST' && req.path ==
 app.get('/health', (req, res) => {
     res.json({
         service:    'phone-bot',
-        provider:   'twilio',
+        provider:   voiceProvider(),
         status:     'running',
         startedAt,
         uptimeSec:  Math.round(process.uptime()),
@@ -136,7 +137,7 @@ app.get('/health', (req, res) => {
         smsPublic:  false,
         smsInternal: true,
         baseUrl:    process.env.BASE_URL || '(non défini)',
-        phone:      process.env.TWILIO_PHONE_NUMBER || '(non défini)',
+        phone:      voicePhoneNumber() || '(non défini)',
     });
 });
 
@@ -146,7 +147,7 @@ const PORT = parseInt(process.env.SERVER_PORT || process.env.PORT || '3000', 10)
 
 app.listen(PORT, () => {
     log('─'.repeat(58));
-    log(`🥊 Boxing Center Phone Bot (Twilio) — port ${PORT}`);
+    log(`Boxing Center Phone Bot (${voiceProvider()}) — port ${PORT}`);
 
     const BASE_URL = process.env.BASE_URL;
     if (BASE_URL) {
@@ -158,6 +159,7 @@ app.listen(PORT, () => {
         log(`   Health      → GET  http://localhost:${PORT}/health`);
     }
 
+    log(`   Numero      : ${voicePhoneNumber() || '(non défini)'}`);
     log('   SMS public  : coupé (sauf menu interne 99)');
     if (process.env.BOT_DRY_RUN === 'true') {
         warn('Mode DRY-RUN actif — aucun SMS ne sera envoyé');

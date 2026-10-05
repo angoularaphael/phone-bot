@@ -1,11 +1,11 @@
 'use strict';
 
 /**
- * Callback de statut Twilio (StatusCallback).
- * Twilio POST vers cette URL en fin d'appel avec :
+ * Callback de statut voix (StatusCallback).
+ * POST en fin d'appel avec :
  *   CallSid, CallStatus, CallDuration (secondes)
  *
- * À configurer dans Twilio Console → Phone Numbers → Voice → Status Callback URL :
+ * À configurer dans Telnyx TeXML App ou Twilio Console :
  *   https://votre-serveur.com/voice/status
  */
 

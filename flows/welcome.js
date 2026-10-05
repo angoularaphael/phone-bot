@@ -13,7 +13,7 @@ const { WELCOME }          = require('../config/messages');
 async function welcome(req, res) {
     const callSid = req.body.CallSid;
     const caller  = req.body.From  || 'unknown';
-    const called  = req.body.To    || process.env.TWILIO_PHONE_NUMBER || '';
+    const called  = req.body.To    || require('../lib/provider').voicePhoneNumber() || '';
 
     log(`📞 Appel entrant — CallSid: ${callSid}  De: ${caller}  Vers: ${called}`);
 

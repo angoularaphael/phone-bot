@@ -1,7 +1,7 @@
 # Boxing Center — Phone Bot
 
 Bot téléphonique de la ligne principale Boxing Center (09 39 03 67 48).
-Gère les appels via **Twilio** : **David** (voix homme **Polly.Remi-Neural**), menu à touches, SMS, demande de rappel.
+Gère les appels via **Telnyx** (cible) ou **Twilio** (secours) : **David** (voix homme **Polly.Remi-Neural**), menu à touches, SMS interne, demande de rappel.
 
 **Aucun transfert vers un humain.** Le bot lit des réponses courtes (horaires, tarifs, planning par salle, résiliation).
 
@@ -17,7 +17,7 @@ Gère les appels via **Twilio** : **David** (voix homme **Polly.Remi-Neural**), 
 | Touche 3 | Gérer l'abonnement / facture |
 | Touche 4 | Autre motif (question, SMS, rappel) |
 | Après une réponse | 1 SMS · 2 rappel · * menu · ou une nouvelle question |
-| Parole | David écoute (Twilio STT) et répond (Gemini, repli Groq) |
+| Parole | David écoute (STT) et répond (Gemini, repli Groq) |
 | Supabase | Historique d'appels |
 
 ---
@@ -60,7 +60,7 @@ cp .env.example .env
 
 ### Prérequis
 
-1. Compte Twilio (voix + SMS)
+1. Compte **Telnyx** (voix, recommandé) ou Twilio (secours)
 2. Clé Groq (`GROQ_API_KEY`, préfixe `gsk_`) — relais Gemini / Mistral possibles (secours parole)
 3. HTTPS public (`BASE_URL`) pour les webhooks
 4. Supabase — migration `supabase/001_phone_bot.sql`
@@ -78,12 +78,33 @@ node index.js --dev
 
 ---
 
-## Configuration Twilio
+## Bascule Telnyx (voix)
+
+1. Créer un compte sur [portal.telnyx.com](https://portal.telnyx.com)
+2. Acheter / porter un numéro FR (voice)
+3. Créer une **TeXML Application** :
+   - Voice URL : `POST https://VOTRE_URL/voice`
+   - Status callback : `POST https://VOTRE_URL/voice/status`
+4. Assigner le numéro à cette application
+5. Dans `.env` :
+   ```
+   VOICE_PROVIDER=telnyx
+   TELNYX_API_KEY=...
+   TELNYX_PHONE_NUMBER=+33...
+   ```
+6. Redémarrer le bot, puis `node index.js --verify`
+7. Appeler le numéro Telnyx pour tester (garder Twilio actif jusqu’à validation)
+
+SMS interne (menu 99) reste sur Twilio pour l’instant.
+
+### Twilio (secours / actuel)
 
 | Champ | Valeur |
 |---|---|
 | Voice — A call comes in | `POST https://VOTRE_URL/voice` |
 | Voice — Status callback URL | `POST https://VOTRE_URL/voice/status` |
+
+`VOICE_PROVIDER=twilio` (défaut).
 
 ---
 
@@ -91,9 +112,13 @@ node index.js --dev
 
 | Variable | Description |
 |---|---|
+| `VOICE_PROVIDER` | `telnyx` ou `twilio` (défaut) |
+| `TELNYX_API_KEY` / `TELNYX_PHONE_NUMBER` | Compte Telnyx voix |
 | `BASE_URL` | URL publique HTTPS |
-| `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` | Compte Twilio (voix + SMS) |
-| `TWILIO_PHONE_NUMBER` | Numéro voix / SMS |
+| `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` | Twilio (voix si actif + SMS 99) |
+| `TWILIO_PHONE_NUMBER` | Numéro Twilio |
+| `BOT_TRANSCRIPTION_ENGINE` | Telnyx STT (défaut `Deepgram`) |
+| `BOT_SPEECH_MODEL` | Telnyx : `deepgram/nova-2` ; Twilio : `phone_call` |
 | `GROQ_API_KEY` | Repli si Gemini absent |
 | `GEMINI_API_KEY` / `GEMINI_API_KEY_1` | Clés boutique Vercel — David les utilise en premier |
 | `AI_PROVIDER` | Défaut `gemini` |
@@ -145,7 +170,8 @@ phone-bot/
 │   ├── converse.js       ← secours si l'appelant parle
 │   └── …
 ├── lib/
-│   ├── twiml.js          ← Polly.Remi-Neural + pauses SSML
+│   ├── provider.js       ← telnyx / twilio
+│   ├── twiml.js          ← Polly.Remi-Neural + pauses SSML (TeXML / TwiML)
 │   ├── llm.js
 │   └── transfer.js       ← toujours null
 ```
