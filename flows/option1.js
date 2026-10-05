@@ -35,8 +35,9 @@ async function option1(req, res) {
         return res.send(buildGather({
             say: `${OPTION1_OFFERS} ${OPTION1_ASK_SMS}`,
             action: voiceUrl('option1', { phase: 'sms' }),
-            timeout: 8,
+            timeout: 10,
             rate: RATE_OFFERS,
+            bargeIn: false,
         }));
     }
 
