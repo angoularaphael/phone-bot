@@ -51,7 +51,7 @@ async function option1(req, res) {
 
 async function finishWithSms(req, res, callSid, caller) {
     const link = boutiqueLink();
-    const body = `Boxing Center — inscrivez-vous ici : ${link}`;
+    const body = `Boxing Center: inscrivez-vous ici ${link}`;
     log(`Option1 SMS — CallSid: ${callSid} → ${caller}`);
 
     const result = await sendSms({ to: caller, body, allowPublic: true });
